@@ -1057,6 +1057,38 @@ html, body {
   margin-top: 6px;
 }
 
+/* Bilingual Segmented Control */
+.lang-segmented-control {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.lang-seg-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lang-seg-btn:active {
+  transform: scale(0.95);
+}
+
+.lang-seg-btn.active {
+  background: var(--accent-indigo);
+  color: #fff;
+  box-shadow: 0 2px 8px var(--accent-indigo-glow);
+}
+
 /* Utility Helpers */
 .hidden { display: none !important; }
 .text-indigo { color: var(--accent-indigo); }
@@ -1065,4 +1097,5 @@ html, body {
 .text-rose { color: var(--accent-rose); }
 .text-amber { color: var(--accent-amber); }
 .font-mono { font-family: var(--font-mono); }
+
 

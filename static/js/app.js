@@ -47,48 +47,51 @@
 
   let selectedPhotoForModal = null;
 
-  // --- PHONETIC NORMALIZATION ENGINE ---
+  // --- PHONETIC NORMALIZATION ENGINE (BILINGUAL ES & EN) ---
   function normalizeTechnicalTerms(text) {
     if (!text || typeof text !== 'string') return '';
     let processed = text;
 
-    // 1. Specific Phonetic Acronym Regexes for Spanish speech recognition quirks:
+    // 1. Phonetic Acronym Regexes for Spanish & English speech recognition:
     
-    // SAPI: "saad pi", "saat pi", "sad pi", "sat pi", "sa pi", "happy", "sappy", "s a p i", "ese a pe i"
-    processed = processed.replace(/\b(saad\s*pi|saat\s*pi|sad\s*pi|sat\s*pi|sa\s*pi|happy\s*de\s*pagos|sappy|s\s*a\s*p\s*i|ese\s*a\s*pe\s*i)\b/gi, 'SAPI');
-    // Contextual SAPI when speech engine hears "happy" in software/business contexts
-    processed = processed.replace(/\b(en\s*el|del|al|sistema|aplicaci[oó]n|servicio|flujo|endpoint|api|pantalla|m[oó]dulo|proceso)\s+happy\b/gi, '$1 SAPI');
-    processed = processed.replace(/\bhappy\s+(de\s*pagos|de\s*facturaci[oó]n|core|v\d+|cloud|gateway|services?)\b/gi, 'SAPI $1');
+    // SAPI: "saad pi", "saat pi", "sad pi", "sat pi", "sa pi", "happy", "sappy", "sad pie", "sap ee", "s a p i", "ese a pe i"
+    processed = processed.replace(/\b(saad\s*pi|saat\s*pi|sad\s*pi|sat\s*pi|sa\s*pi|sad\s*pie|sap\s*ee|sad\s*pee|happy\s*de\s*pagos|happy\s*payments?|happy\s*api|sappy|s\s*a\s*p\s*i|ese\s*a\s*pe\s*i)\b/gi, 'SAPI');
+    // Contextual SAPI when speech engine hears "happy" in software/business contexts (Spanish & English)
+    processed = processed.replace(/\b(en\s*el|del|al|sistema|aplicaci[oó]n|servicio|flujo|endpoint|api|pantalla|m[oó]dulo|proceso|the|in|to|on|system|service|flow|module)\s+happy\b/gi, '$1 SAPI');
+    processed = processed.replace(/\bhappy\s+(de\s*pagos|de\s*facturaci[oó]n|core|v\d+|cloud|gateway|services?|payments?|billing|endpoint)\b/gi, 'SAPI $1');
 
-    // RMI: "ere mi", "erre eme i", "ere eme i", "r m i", "armi", "erne i", "r mi"
-    processed = processed.replace(/\b(ere\s*eme\s*i|erre\s*eme\s*i|ere\s*mi|r\s*m\s*i|armi|erne\s*i|r\s*mi)\b/gi, 'RMI');
+    // RMI: "ere mi", "erre eme i", "ere eme i", "r m i", "armi", "erne i", "r mi", "are em eye", "are my"
+    processed = processed.replace(/\b(ere\s*eme\s*i|erre\s*eme\s*i|ere\s*mi|r\s*m\s*i|armi|erne\s*i|r\s*mi|are\s*em\s*eye|are\s*my)\b/gi, 'RMI');
 
-    // GMO: "ge eme o", "ge me o", "g m o", "gmeo", "llimo", "jimo"
-    processed = processed.replace(/\b(ge\s*eme\s*o|ge\s*me\s*o|g\s*m\s*o|g\s*eme\s*o|gmeo|llimo|jimo)\b/gi, 'GMO');
+    // GMO: "ge eme o", "ge me o", "g m o", "gmeo", "llimo", "jimo", "gee em oh"
+    processed = processed.replace(/\b(ge\s*eme\s*o|ge\s*me\s*o|g\s*m\s*o|g\s*eme\s*o|gmeo|llimo|jimo|gee\s*em\s*oh)\b/gi, 'GMO');
 
-    // SAP: "ese a pe", "es a pe", "s a p"
-    processed = processed.replace(/\b(ese\s*a\s*pe|es\s*a\s*pe|s\s*a\s*p)\b/gi, 'SAP');
+    // SAP: "ese a pe", "es a pe", "s a p", "es ay pee"
+    processed = processed.replace(/\b(ese\s*a\s*pe|es\s*a\s*pe|s\s*a\s*p|es\s*ay\s*pee)\b/gi, 'SAP');
 
-    // API & APIs: "a pe i", "apei", "a p i", "a pe is", "a p i s"
-    processed = processed.replace(/\b(a\s*pe\s*is|a\s*p\s*i\s*s|apeis)\b/gi, 'APIs');
-    processed = processed.replace(/\b(a\s*pe\s*i|a\s*p\s*i|apei)\b/gi, 'API');
+    // API & APIs: "a pe i", "apei", "a p i", "a pe is", "a p i s", "ay pee eye"
+    processed = processed.replace(/\b(a\s*pe\s*is|a\s*p\s*i\s*s|apeis|ay\s*pee\s*eyes?)\b/gi, 'APIs');
+    processed = processed.replace(/\b(a\s*pe\s*i|a\s*p\s*i|apei|ay\s*pee\s*eye)\b/gi, 'API');
 
-    // SQL: "ese cu ele", "s q l", "secuel", "sicuol", "sikuel"
-    processed = processed.replace(/\b(ese\s*cu\s*ele|s\s*q\s*l|secuel|sicuol|sikuel)\b/gi, 'SQL');
+    // SQL: "ese cu ele", "s q l", "secuel", "sicuol", "sikuel", "es cue el"
+    processed = processed.replace(/\b(ese\s*cu\s*ele|s\s*q\s*l|secuel|sicuol|sikuel|es\s*cue\s*el)\b/gi, 'SQL');
 
-    // AWS: "a doble u ese", "a w s"
-    processed = processed.replace(/\b(a\s*doble\s*u\s*ese|a\s*w\s*s)\b/gi, 'AWS');
+    // AWS: "a doble u ese", "a w s", "ay double you ess"
+    processed = processed.replace(/\b(a\s*doble\s*u\s*ese|a\s*w\s*s|ay\s*double\s*you\s*ess)\b/gi, 'AWS');
+
+    // CI/CD: "see eye see dee", "ce i ce de"
+    processed = processed.replace(/\b(see\s*eye\s*see\s*dee|ce\s*i\s*ce\s*de)\b/gi, 'CI/CD');
 
     // ERP, CRM, SLA, KPI, QA, PR, SSO, OAuth, JSON
-    processed = processed.replace(/\b(e\s*ere\s*pe|e\s*r\s*p)\b/gi, 'ERP');
-    processed = processed.replace(/\b(ce\s*ere\s*eme|c\s*r\s*m)\b/gi, 'CRM');
-    processed = processed.replace(/\b(ese\s*ele\s*a|s\s*l\s*a)\b/gi, 'SLA');
-    processed = processed.replace(/\b(ca\s*pe\s*i|k\s*p\s*i)\b/gi, 'KPI');
-    processed = processed.replace(/\b(cu\s*a|q\s*a)\b/gi, 'QA');
-    processed = processed.replace(/\b(pe\s*ere|p\s*r)\b/gi, 'PR');
-    processed = processed.replace(/\b(ese\s*ese\s*o|s\s*s\s*o)\b/gi, 'SSO');
-    processed = processed.replace(/\b(ou\s*ot|o\s*aut|oaut)\b/gi, 'OAuth');
-    processed = processed.replace(/\b(jeison|j\s*son|geison)\b/gi, 'JSON');
+    processed = processed.replace(/\b(e\s*ere\s*pe|e\s*r\s*p|ee\s*are\s*pee)\b/gi, 'ERP');
+    processed = processed.replace(/\b(ce\s*ere\s*eme|c\s*r\s*m|see\s*are\s*em)\b/gi, 'CRM');
+    processed = processed.replace(/\b(ese\s*ele\s*a|s\s*l\s*a|es\s*el\s*ay)\b/gi, 'SLA');
+    processed = processed.replace(/\b(ca\s*pe\s*i|k\s*p\s*i|kay\s*pee\s*eye)\b/gi, 'KPI');
+    processed = processed.replace(/\b(cu\s*a|q\s*a|cue\s*ay)\b/gi, 'QA');
+    processed = processed.replace(/\b(pe\s*ere|p\s*r|pee\s*are)\b/gi, 'PR');
+    processed = processed.replace(/\b(ese\s*ese\s*o|s\s*s\s*o|es\s*es\s*oh)\b/gi, 'SSO');
+    processed = processed.replace(/\b(ou\s*ot|o\s*aut|oaut|oh\s*auth)\b/gi, 'OAuth');
+    processed = processed.replace(/\b(jeison|j\s*son|geison|jay\s*sawn)\b/gi, 'JSON');
     processed = processed.replace(/\b(fron\s*en|front\s*en|fronen)\b/gi, 'Frontend');
     processed = processed.replace(/\b(bak\s*en|back\s*en|baken)\b/gi, 'Backend');
 
@@ -113,6 +116,43 @@
     }
 
     return processed;
+  }
+
+  // --- BILINGUAL LANGUAGE SWITCHER ---
+  function setSpeechLanguage(lang, silent = false) {
+    if (!lang) return;
+    haptic(15);
+    state.speechLang = lang;
+    localStorage.setItem('sessionflow_speech_lang', lang);
+
+    const btnES = document.getElementById('btnLangES');
+    const btnEN = document.getElementById('btnLangEN');
+    if (btnES && btnEN) {
+      if (lang.startsWith('es')) {
+        btnES.classList.add('active');
+        btnEN.classList.remove('active');
+      } else {
+        btnEN.classList.add('active');
+        btnES.classList.remove('active');
+      }
+    }
+
+    const selectLang = document.getElementById('selectSpeechLang');
+    if (selectLang) selectLang.value = lang;
+
+    if (state.speechEngine) {
+      state.speechEngine.lang = lang;
+      if (state.isRecording && !state.isPaused) {
+        try {
+          state.speechEngine.stop();
+        } catch (e) {}
+      }
+    }
+
+    if (!silent) {
+      const langName = lang.startsWith('es') ? '🇲🇽 Español' : '🇺🇸 English';
+      showToast(`🎙️ Idioma de escucha: ${langName}`, 'info');
+    }
   }
 
   // --- HAPTICS & TOAST ---
@@ -725,14 +765,14 @@ Devuelve tu respuesta estrictamente en este formato JSON:
 
     try {
       const prompt = `Eres un Arquitecto de Procesos y Tutor Senior de Negocio.
-Analiza la siguiente información de una sesión de trabajo:
-=== TRANSCRIPCIÓN DE AUDIO ===
+Analiza la siguiente información de una sesión de trabajo (la cual puede estar en Español, Inglés o Spanglish con términos técnicos y pantallas de sistemas):
+=== TRANSCRIPCIÓN DE AUDIO (ES/EN) ===
 ${sessionTranscriptText || '(Sin audio)'}
 
-=== FOTOS DE PANTALLA Y TEAMS ===
+=== FOTOS DE PANTALLA Y TEAMS (OCR) ===
 ${photosText || '(Sin fotos)'}
 
-Genera una guía paso a paso ultra clara y estructurada.
+Genera una guía paso a paso ultra clara y estructurada. Si el contenido original está en inglés o mezcla idiomas, explícalo de manera comprensible preservando los nombres técnicos exactos de botones, menús y sistemas.
 Devuelve ÚNICAMENTE este formato JSON válido:
 {
   "summary": "Resumen ejecutivo claro del objetivo de este proceso.",
@@ -743,7 +783,7 @@ Devuelve ÚNICAMENTE este formato JSON válido:
       "role": "Quién lo hace",
       "description": "Explicación detallada y clara.",
       "keyAction": "Acción o botón clave que se debe presionar",
-      "tool": "Herramienta (ej. Teams, Excel, Portal)"
+      "tool": "Herramienta (ej. Teams, Excel, Portal, AWS)"
     }
   ],
   "glossary": [
@@ -904,13 +944,13 @@ ${p.ocrText || 'Sin texto'}
     if (!ocrText) ocrText = "(No se agregaron capturas de pantalla)";
 
     const prompt = `# ROL Y OBJETIVO
-Actúa como mi mentor y tutor experto de negocio y procesos. Tu meta es explicarme de forma cristalina, paso a paso y con ejemplos prácticos todo lo que se habló y mostró en esta reunión de trabajo ("${state.title}").
+Actúa como mi mentor y tutor experto de negocio y procesos. Tu meta es explicarme de forma cristalina, paso a paso y con ejemplos prácticos todo lo que se habló y mostró en esta reunión de trabajo ("${state.title}"). La reunión o capturas de pantalla pueden contener audio y texto en inglés o español.
 
 Aún estoy aprendiendo los flujos de mi trabajo, así que por favor:
 1. Explícame de qué trata este proceso como si tuviera que explicárselo a alguien nuevo.
 2. Desglosa los pasos exactos que debo seguir cuando me toque hacerlo a mí.
-3. Traduce las siglas o términos técnicos que se mencionaron a español claro y comprensible.
-4. Señala qué botones debo presionar o qué acciones debo tomar según el texto extraído de las capturas de pantalla de Teams.
+3. Traduce y explica las siglas o términos técnicos que se mencionaron (en inglés o español) a lenguaje claro y comprensible.
+4. Señala qué botones debo presionar o qué acciones debo tomar según el texto extraído de las capturas de pantalla de Teams / Sistemas.
 5. Dame una lista de 3 preguntas de repaso para asegurarme de que dominé el tema.
 
 ---
@@ -1359,6 +1399,7 @@ INSTRUCCIONES CRÍTICAS:
 
       updateBadges();
       updateLiveWordCount(0);
+      setSpeechLanguage(state.speechLang, true);
       if (state.analysis) renderWorkflow(state.analysis);
     } catch (e) {}
   }
@@ -1414,6 +1455,7 @@ INSTRUCCIONES CRÍTICAS:
     pauseRecording,
     stopRecording,
     stopAndPromptSave,
+    setSpeechLanguage,
     openSaveSessionModal,
     closeSaveSessionModal,
     confirmSaveOnly,

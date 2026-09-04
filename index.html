@@ -90,9 +90,12 @@
           
           <!-- Audio Recording Card -->
           <div class="glass-card audio-recorder-box">
-            <div class="card-header" style="width: 100%;">
-              <div class="card-title">🎙️ Grabación en Tiempo Real</div>
-              <span id="audioEngineBadge" class="badge-tag" style="color: #38bdf8;">Voz Continua</span>
+            <div class="card-header" style="width: 100%; display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title">🎙️ Grabación en Vivo</div>
+              <div class="lang-segmented-control" title="Cambiar idioma de escucha">
+                <button type="button" id="btnLangES" class="lang-seg-btn active" onclick="window.app.setSpeechLanguage('es-MX')">🇲🇽 ES</button>
+                <button type="button" id="btnLangEN" class="lang-seg-btn" onclick="window.app.setSpeechLanguage('en-US')">🇺🇸 EN</button>
+              </div>
             </div>
 
             <!-- Big Interactive Trigger Button -->
