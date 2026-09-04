@@ -1,7 +1,7 @@
 /**
  * ==========================================================================
- * SESSIONFLOW AI v2.6 - MASTER ENGINE (REAL-TIME STREAM & SAVE NAMING)
- * Zero-Dependency, Direct Global Bindings, iPhone Safari & Desktop Infallible
+ * SESSIONFLOW AI v2.7 - MASTER ENGINE (DIRECT SPEECH STREAM & EXPLICIT STOP)
+ * Zero-Dependency, Direct Global Bindings, iOS Safari & Desktop Infallible
  * ==========================================================================
  */
 
@@ -24,12 +24,9 @@
     elapsedSeconds: 0,
     timerInterval: null,
     silenceTimer: null,
+    visualizerInterval: null,
     lastSpeechTimestamp: Date.now(),
     speechEngine: null,
-    audioStream: null,
-    audioContext: null,
-    audioAnalyser: null,
-    animFrameId: null,
     totalWordCount: 0,
     
     geminiKey: localStorage.getItem('sessionflow_gemini_key') || '',
@@ -118,128 +115,12 @@
     }
   }
 
-  // --- AUDIO RECORDING & REAL-TIME VISUALIZER ---
-  async function startRecording() {
-    haptic(30);
-
-    // 1. Request microphone hardware stream for visualizer & iOS permission
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        state.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          state.audioContext = new AudioCtx();
-          if (state.audioContext.state === 'suspended') {
-            await state.audioContext.resume();
-          }
-          const source = state.audioContext.createMediaStreamSource(state.audioStream);
-          state.audioAnalyser = state.audioContext.createAnalyser();
-          state.audioAnalyser.fftSize = 64;
-          source.connect(state.audioAnalyser);
-          startWaveformVisualizer();
-        }
-      }
-    } catch (e) {
-      console.warn('Microphone hardware permission info:', e);
-    }
-
-    // 2. Initialize Speech Recognition
-    if (!state.speechEngine) {
-      state.speechEngine = initSpeechRecognition();
-    }
-
-    state.isRecording = true;
-    state.isPaused = false;
-    state.lastSpeechTimestamp = Date.now();
-
-    // UI Updates
-    const btn = document.getElementById('btnBigRecord');
-    if (btn) {
-      btn.classList.add('recording');
-      const icon = document.getElementById('recordBtnIcon');
-      if (icon) icon.textContent = '⏹️';
-    }
-
-    const dot = document.getElementById('pulseDot');
-    if (dot) dot.className = 'pulse-dot recording';
-
-    const liveDot = document.getElementById('liveStatusDot');
-    if (liveDot) liveDot.style.background = '#10b981';
-
-    const statusLabel = document.getElementById('recordStatusLabel');
-    if (statusLabel) statusLabel.textContent = 'Grabando y transcribiendo en vivo...';
-
-    const streamingBox = document.getElementById('liveSpeechStreamingText');
-    if (streamingBox) streamingBox.textContent = '🎙️ Escuchando... habla y verás las palabras aquí en tiempo real.';
-
-    const pauseBtn = document.getElementById('btnPauseAudio');
-    if (pauseBtn) {
-      pauseBtn.style.display = 'inline-flex';
-      pauseBtn.textContent = '⏸️ Pausar';
-    }
-
-    const finishBtn = document.getElementById('btnFinishAndSave');
-    if (finishBtn) finishBtn.style.display = 'inline-flex';
-
-    // Start timer
-    if (state.timerInterval) clearInterval(state.timerInterval);
-    state.timerInterval = setInterval(() => {
-      state.elapsedSeconds++;
-      const timeStr = formatTimer(state.elapsedSeconds);
-      const topTimer = document.getElementById('sessionTimer');
-      if (topTimer) topTimer.textContent = timeStr;
-      const bigTimer = document.getElementById('recordTimeLarge');
-      if (bigTimer) bigTimer.textContent = timeStr;
-    }, 1000);
-
-    // Silence detector
-    if (state.silenceTimer) clearInterval(state.silenceTimer);
-    state.silenceTimer = setInterval(() => {
-      if (state.isRecording && !state.isPaused) {
-        const silentForMs = Date.now() - state.lastSpeechTimestamp;
-        if (silentForMs > 25000 && state.transcripts.length > 0) {
-          openSilenceModal();
-        }
-      }
-    }, 8000);
-
-    // Start recognition
-    if (state.speechEngine) {
-      try { state.speechEngine.start(); } catch (e) {}
-    }
-
-    showToast('🎙️ Grabación y transcripción en vivo iniciada', 'success');
-  }
-
-  function startWaveformVisualizer() {
-    const bars = document.querySelectorAll('#waveformBars .wave-bar');
-    if (!bars || bars.length === 0 || !state.audioAnalyser) return;
-
-    const dataArray = new Uint8Array(state.audioAnalyser.frequencyBinCount);
-    function updateVisualizer() {
-      if (!state.isRecording || state.isPaused) {
-        bars.forEach(b => b.style.height = '6px');
-        return;
-      }
-
-      state.audioAnalyser.getByteFrequencyData(dataArray);
-      for (let i = 0; i < bars.length; i++) {
-        const val = dataArray[i * 2] || 0;
-        const height = Math.max(6, Math.min(28, (val / 255) * 32));
-        bars[i].style.height = `${height}px`;
-      }
-
-      state.animFrameId = requestAnimationFrame(updateVisualizer);
-    }
-    updateVisualizer();
-  }
-
-  function initSpeechRecognition() {
+  // --- AUDIO RECOGNITION (IOS SAFARI COMPATIBLE) ---
+  function initSpeechEngine() {
     const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechClass) {
       const badge = document.getElementById('audioEngineBadge');
-      if (badge) badge.textContent = 'Audio Local';
+      if (badge) badge.textContent = 'Audio Manual';
       return null;
     }
 
@@ -247,6 +128,15 @@
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = state.speechLang || 'es-MX';
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      console.log('Voice recognition started.');
+      const streamText = document.getElementById('liveSpeechStreamingText');
+      if (streamText) streamText.textContent = '🎙️ Escuchando... habla y verás las palabras aquí en tiempo real.';
+      const liveDot = document.getElementById('liveStatusDot');
+      if (liveDot) liveDot.style.background = '#10b981';
+    };
 
     recognition.onresult = (event) => {
       state.lastSpeechTimestamp = Date.now();
@@ -259,24 +149,26 @@
         else interim += text;
       }
 
-      // Real-time live streaming text display
+      // Display live streaming words
       const streamText = document.getElementById('liveSpeechStreamingText');
       if (streamText) {
         if (interim) {
           streamText.textContent = `▶️ "${interim.trim()}"`;
-          streamText.style.display = 'block';
         } else if (final) {
           streamText.textContent = `✓ "${final.trim()}"`;
         }
       }
 
-      // Live word count update
+      // Pulse the wave visualizer with live speech
+      animateWavebars(true);
+
+      // Live word counter
       if (interim || final) {
         const words = (interim + ' ' + final).trim().split(/\s+/).filter(Boolean).length;
         updateLiveWordCount(words);
       }
 
-      // When final sentence completes
+      // Finalized sentence
       if (final.trim().length > 1) {
         addTranscriptItem(final.trim(), 'Participante');
         addLiveTranscriptSnippet(final.trim());
@@ -284,10 +176,15 @@
     };
 
     recognition.onerror = (err) => {
-      console.warn('Speech engine:', err.error);
+      console.warn('Speech engine status/error:', err.error);
+      if (err.error === 'not-allowed') {
+        showToast('Permiso de micrófono requerido en Safari/Ajustes', 'error');
+        stopRecording();
+      }
     };
 
     recognition.onend = () => {
+      // Auto-restart if still recording for continuous 1h+ sessions
       if (state.isRecording && !state.isPaused) {
         try { recognition.start(); } catch (e) {}
       }
@@ -296,31 +193,85 @@
     return recognition;
   }
 
-  function addLiveTranscriptSnippet(text) {
-    const list = document.getElementById('recentLiveTranscriptList');
-    if (!list) return;
+  function animateWavebars(active = false) {
+    const bars = document.querySelectorAll('#waveformBars .wave-bar');
+    if (!bars || bars.length === 0) return;
 
-    const item = document.createElement('div');
-    item.className = 'live-history-pill';
-    item.innerHTML = `<strong style="color:var(--accent-indigo); font-family:var(--font-mono); font-size:10px;">[${getCurrentTimeString()}]</strong> ${escapeHtml(text)}`;
-    list.prepend(item);
-
-    // Limit live preview stack to 5 most recent
-    if (list.children.length > 5) {
-      list.removeChild(list.lastChild);
+    if (active) {
+      bars.forEach(b => {
+        const h = Math.floor(Math.random() * 20) + 6;
+        b.style.height = `${h}px`;
+      });
+    } else {
+      bars.forEach(b => b.style.height = '6px');
     }
   }
 
-  function updateLiveWordCount(currentSentenceWords = 0) {
-    let total = 0;
-    state.transcripts.forEach(t => {
-      total += (t.text || '').trim().split(/\s+/).filter(Boolean).length;
-    });
-    total += currentSentenceWords;
-    state.totalWordCount = total;
+  function startRecording() {
+    haptic(30);
 
-    const countBadge = document.getElementById('liveWordCount');
-    if (countBadge) countBadge.textContent = `${total} palabras`;
+    if (!state.speechEngine) {
+      state.speechEngine = initSpeechEngine();
+    }
+
+    state.isRecording = true;
+    state.isPaused = false;
+    state.lastSpeechTimestamp = Date.now();
+
+    // 1. Update UI Elements
+    const btnBig = document.getElementById('btnBigRecord');
+    if (btnBig) {
+      btnBig.classList.add('recording');
+      const icon = document.getElementById('recordBtnIcon');
+      if (icon) icon.textContent = '⏹️';
+    }
+
+    const dot = document.getElementById('pulseDot');
+    if (dot) dot.className = 'pulse-dot recording';
+
+    const liveDot = document.getElementById('liveStatusDot');
+    if (liveDot) liveDot.style.background = '#10b981';
+
+    const statusLabel = document.getElementById('recordStatusLabel');
+    if (statusLabel) statusLabel.textContent = '🔴 Grabando en vivo... Toca para detener';
+
+    // Toggle control buttons
+    const btnStartDirect = document.getElementById('btnStartDirect');
+    const btnPauseAudio = document.getElementById('btnPauseAudio');
+    const btnStopAudio = document.getElementById('btnStopAudio');
+
+    if (btnStartDirect) btnStartDirect.style.display = 'none';
+    if (btnPauseAudio) {
+      btnPauseAudio.style.display = 'inline-flex';
+      btnPauseAudio.textContent = '⏸️ Pausar';
+    }
+    if (btnStopAudio) btnStopAudio.style.display = 'inline-flex';
+
+    // 2. Start timer
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(() => {
+      state.elapsedSeconds++;
+      const timeStr = formatTimer(state.elapsedSeconds);
+      const topTimer = document.getElementById('sessionTimer');
+      if (topTimer) topTimer.textContent = timeStr;
+      const bigTimer = document.getElementById('recordTimeLarge');
+      if (bigTimer) bigTimer.textContent = timeStr;
+    }, 1000);
+
+    // 3. Visualizer pulse
+    if (state.visualizerInterval) clearInterval(state.visualizerInterval);
+    state.visualizerInterval = setInterval(() => {
+      if (state.isRecording && !state.isPaused) {
+        animateWavebars(true);
+      }
+    }, 200);
+
+    // 4. Start Speech Recognition
+    if (state.speechEngine) {
+      try { state.speechEngine.start(); } catch (e) {}
+    }
+
+    showToast('🎙️ Grabación en vivo iniciada', 'success');
   }
 
   function pauseRecording() {
@@ -337,11 +288,12 @@
       if (state.speechEngine) {
         try { state.speechEngine.stop(); } catch (e) {}
       }
+      animateWavebars(false);
       if (pauseBtn) pauseBtn.textContent = '▶️ Reanudar';
       if (dot) dot.className = 'pulse-dot paused';
       if (liveDot) liveDot.style.background = '#f59e0b';
       if (statusLabel) statusLabel.textContent = 'Sesión en pausa';
-      showToast('Pausa activada', 'warning');
+      showToast('Grabación en pausa', 'warning');
     } else {
       if (state.speechEngine) {
         try { state.speechEngine.start(); } catch (e) {}
@@ -350,7 +302,7 @@
       if (pauseBtn) pauseBtn.textContent = '⏸️ Pausar';
       if (dot) dot.className = 'pulse-dot recording';
       if (liveDot) liveDot.style.background = '#10b981';
-      if (statusLabel) statusLabel.textContent = 'Grabando...';
+      if (statusLabel) statusLabel.textContent = '🔴 Grabando en vivo...';
       showToast('Grabación reanudada', 'info');
     }
   }
@@ -360,6 +312,7 @@
     state.isRecording = false;
     state.isPaused = false;
 
+    // Clear all intervals
     if (state.timerInterval) {
       clearInterval(state.timerInterval);
       state.timerInterval = null;
@@ -368,20 +321,22 @@
       clearInterval(state.silenceTimer);
       state.silenceTimer = null;
     }
+    if (state.visualizerInterval) {
+      clearInterval(state.visualizerInterval);
+      state.visualizerInterval = null;
+    }
 
+    // Stop speech engine
     if (state.speechEngine) {
       try { state.speechEngine.stop(); } catch (e) {}
     }
 
-    if (state.audioStream) {
-      state.audioStream.getTracks().forEach(track => track.stop());
-      state.audioStream = null;
-    }
+    animateWavebars(false);
 
-    // UI Reset
-    const btn = document.getElementById('btnBigRecord');
-    if (btn) {
-      btn.classList.remove('recording');
+    // Reset UI to idle state
+    const btnBig = document.getElementById('btnBigRecord');
+    if (btnBig) {
+      btnBig.classList.remove('recording');
       const icon = document.getElementById('recordBtnIcon');
       if (icon) icon.textContent = '🎙️';
     }
@@ -393,22 +348,24 @@
     if (liveDot) liveDot.style.background = '#64748b';
 
     const statusLabel = document.getElementById('recordStatusLabel');
-    if (statusLabel) statusLabel.textContent = 'Toca el botón para Grabar';
+    if (statusLabel) statusLabel.textContent = 'Toca el botón para Iniciar Grabación';
 
-    const pauseBtn = document.getElementById('btnPauseAudio');
-    if (pauseBtn) pauseBtn.style.display = 'none';
+    const btnStartDirect = document.getElementById('btnStartDirect');
+    const btnPauseAudio = document.getElementById('btnPauseAudio');
+    const btnStopAudio = document.getElementById('btnStopAudio');
 
-    const finishBtn = document.getElementById('btnFinishAndSave');
-    if (finishBtn) finishBtn.style.display = 'none';
+    if (btnStartDirect) btnStartDirect.style.display = 'inline-flex';
+    if (btnPauseAudio) btnPauseAudio.style.display = 'none';
+    if (btnStopAudio) btnStopAudio.style.display = 'none';
 
     saveSessionData();
   }
 
   function toggleRecord() {
-    if (!state.isRecording) startRecording();
-    else {
-      stopRecording();
-      openSaveSessionModal();
+    if (!state.isRecording) {
+      startRecording();
+    } else {
+      stopAndPromptSave();
     }
   }
 
@@ -431,7 +388,33 @@
     saveSessionData();
   }
 
-  // --- SAVE SESSION MODAL (CUSTOM NAME) ---
+  function addLiveTranscriptSnippet(text) {
+    const list = document.getElementById('recentLiveTranscriptList');
+    if (!list) return;
+
+    const item = document.createElement('div');
+    item.className = 'live-history-pill';
+    item.innerHTML = `<strong style="color:var(--accent-indigo); font-family:var(--font-mono); font-size:10px;">[${getCurrentTimeString()}]</strong> ${escapeHtml(text)}`;
+    list.prepend(item);
+
+    if (list.children.length > 5) {
+      list.removeChild(list.lastChild);
+    }
+  }
+
+  function updateLiveWordCount(currentSentenceWords = 0) {
+    let total = 0;
+    state.transcripts.forEach(t => {
+      total += (t.text || '').trim().split(/\s+/).filter(Boolean).length;
+    });
+    total += currentSentenceWords;
+    state.totalWordCount = total;
+
+    const countBadge = document.getElementById('liveWordCount');
+    if (countBadge) countBadge.textContent = `${total} palabras`;
+  }
+
+  // --- SAVE SESSION MODAL ---
   function openSaveSessionModal() {
     haptic(25);
     const modal = document.getElementById('modalSaveSession');
@@ -440,7 +423,6 @@
     const txBadge = document.getElementById('saveModalTranscripts');
     const photoBadge = document.getElementById('saveModalPhotos');
 
-    // Generate smart default name with date & time if title is still default
     const now = new Date();
     const dateStr = `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}`;
     const timeStr = getCurrentTimeString().slice(0, 5);
@@ -472,7 +454,7 @@
     }
     closeSaveSessionModal();
     saveSessionData();
-    showToast(`💾 Sesión "${state.title}" guardada en el historial`, 'success');
+    showToast(`💾 Sesión "${state.title}" guardada con éxito`, 'success');
   }
 
   function confirmSaveAndAnalyze() {
@@ -850,7 +832,7 @@ Por favor, comienza estructurando la explicación de forma amigable, profesional
 
     if (!key) {
       setTimeout(() => {
-        appendChatBubble(`Entendido sobre "${text}". Tengo registradas ${state.transcripts.length} intervenciones de voz y ${state.photos.length} fotos de Teams. Para que pueda responderte con análisis profundo en vivo, agrega tu clave gratuita de Gemini en el botón ⚙️ Ajustes arriba a la derecha. También puedes ir a la pestaña "Claude" y copiar el prompt completo para preguntárselo a Claude.`, 'ai');
+        appendChatBubble(`Entendido sobre "${text}". Tengo registradas ${state.transcripts.length} frases y ${state.photos.length} fotos de Teams. Para que pueda responderte con análisis profundo en vivo, agrega tu clave gratuita de Gemini en el botón ⚙️ Ajustes arriba a la derecha. También puedes ir a la pestaña "Claude" y copiar el prompt completo para preguntárselo a Claude.`, 'ai');
       }, 500);
       return;
     }
@@ -1130,7 +1112,7 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
       if (bigTimer) bigTimer.textContent = '00:00:00';
 
       const streamText = document.getElementById('liveSpeechStreamingText');
-      if (streamText) streamText.textContent = 'Presiona Grabar y habla; el texto irá apareciendo aquí en tiempo real...';
+      if (streamText) streamText.textContent = 'Presiona Iniciar Grabación y habla; el texto irá apareciendo aquí en tiempo real...';
 
       const recentList = document.getElementById('recentLiveTranscriptList');
       if (recentList) recentList.innerHTML = '';
@@ -1347,6 +1329,6 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
 
   // Run on startup
   restoreSavedSession();
-  console.log('SessionFlow AI v2.6 Live Stream & Save Ready.');
+  console.log('SessionFlow AI v2.7 Live Stream & Save Ready.');
 
 })();

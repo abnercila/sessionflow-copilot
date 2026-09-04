@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>SessionFlow AI v2.6 | Grabación en Vivo, OCR & Copiloto</title>
+  <title>SessionFlow AI v2.7 | Grabación en Vivo, OCR & Copiloto</title>
   
   <!-- Cache Purge Script to prevent stale iOS Safari cache -->
   <script>
@@ -29,7 +29,7 @@
   <link rel="manifest" href="./manifest.json" />
   
   <!-- Apple Cupertino CSS with Cache Buster -->
-  <link rel="stylesheet" href="./css/styles.css?v=2.6" />
+  <link rel="stylesheet" href="./css/styles.css?v=2.7" />
 </head>
 <body>
 
@@ -40,7 +40,7 @@
       <div class="brand-badge">
         <div class="brand-logo">✨</div>
         <div class="brand-text">
-          <h1>SessionFlow AI <span style="font-size:9px; padding:2px 6px; border-radius:10px; background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.4); font-family:var(--font-mono);">v2.6</span></h1>
+          <h1>SessionFlow AI <span style="font-size:9px; padding:2px 6px; border-radius:10px; background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.4); font-family:var(--font-mono);">v2.7</span></h1>
           <p>Grabación en Vivo · OCR Pantallas · Copiloto</p>
         </div>
       </div>
@@ -100,7 +100,7 @@
               <span id="recordBtnIcon">🎙️</span>
             </button>
 
-            <div id="recordStatusLabel" class="record-status-label">Toca el botón para Grabar</div>
+            <div id="recordStatusLabel" class="record-status-label">Toca el botón para Iniciar Grabación</div>
             <div id="recordTimeLarge" class="record-time-display">00:00:00</div>
 
             <!-- Waveform Animation -->
@@ -112,6 +112,19 @@
               <div class="wave-bar"></div>
               <div class="wave-bar"></div>
               <div class="wave-bar"></div>
+            </div>
+
+            <!-- Dedicated Primary Control Buttons -->
+            <div class="audio-controls-row">
+              <button id="btnStartDirect" class="btn-pill primary" style="padding: 10px 18px;" onclick="window.app.startRecording()">
+                🎙️ Iniciar Grabación
+              </button>
+              <button id="btnPauseAudio" class="btn-pill secondary" style="display:none; padding: 10px 14px;" onclick="window.app.pauseRecording()">
+                ⏸️ Pausar
+              </button>
+              <button id="btnStopAudio" class="btn-pill danger" style="display:none; padding: 10px 18px;" onclick="window.app.stopAndPromptSave()">
+                ⏹️ Detener y Guardar
+              </button>
             </div>
 
             <!-- Prominent Real-time Live Transcript Stream Box -->
@@ -128,7 +141,7 @@
 
               <div id="liveStreamBody" class="live-stream-body">
                 <div id="liveSpeechStreamingText" class="live-interim-text">
-                  "Presiona Grabar y habla; el texto irá apareciendo aquí en tiempo real palabra por palabra..."
+                  "Presiona 'Iniciar Grabación' y habla; el texto irá apareciendo aquí en tiempo real palabra por palabra..."
                 </div>
                 <div id="recentLiveTranscriptList" style="display: flex; flex-direction: column; gap: 4px;">
                   <!-- Past sentences will stack here live -->
@@ -136,11 +149,8 @@
               </div>
             </div>
 
-            <!-- Audio Action Bar -->
-            <div class="audio-controls-row">
-              <button id="btnPauseAudio" class="btn-pill secondary" style="display:none;" onclick="window.app.pauseRecording()">⏸️ Pausar</button>
-              <button id="btnFinishAndSave" class="btn-pill success" style="display:none;" onclick="window.app.stopAndPromptSave()">⏹️ Terminar y Guardar</button>
-              <button id="btnProcessNow" class="btn-pill primary" onclick="window.app.processNow()">⚡ Armar Flujo Ahora</button>
+            <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end; margin-top: 4px;">
+              <button id="btnProcessNow" class="btn-pill primary" style="width: 100%;" onclick="window.app.processNow()">⚡ Armar Flujo con lo Grabado</button>
             </div>
           </div>
 
@@ -510,6 +520,6 @@
   <div id="toastShelf" class="toast-shelf"></div>
 
   <!-- Master Zero-Dependency JavaScript Application with Cache Buster -->
-  <script src="./js/app.js?v=2.6"></script>
+  <script src="./js/app.js?v=2.7"></script>
 </body>
 </html>

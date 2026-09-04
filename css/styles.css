@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SESSIONFLOW AI - APPLE CUPERTINO DARK GLASS DESIGN SYSTEM v2.6
+   SESSIONFLOW AI - APPLE CUPERTINO DARK GLASS DESIGN SYSTEM v2.7
    Zero-dependency, ultra-fast, iOS Safari & Desktop optimized
    ========================================================================== */
 
@@ -193,12 +193,13 @@ html, body {
 }
 
 .btn-pill {
-  padding: 6px 12px;
-  border-radius: 10px;
+  padding: 8px 14px;
+  border-radius: 12px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   cursor: pointer;
   border: 1px solid transparent;
@@ -206,13 +207,19 @@ html, body {
 }
 
 .btn-pill:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 .btn-pill.primary {
   background: linear-gradient(135deg, var(--accent-indigo), #4f46e5);
   color: #fff;
   box-shadow: 0 4px 15px var(--accent-indigo-glow);
+}
+
+.btn-pill.danger {
+  background: linear-gradient(135deg, var(--accent-rose), #e11d48);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(244, 63, 94, 0.4);
 }
 
 .btn-pill.success {
@@ -380,20 +387,20 @@ html, body {
 }
 
 .record-btn-trigger {
-  width: 80px;
-  height: 80px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366f1, #4f46e5);
-  border: 4px solid rgba(255, 255, 255, 0.1);
+  border: 4px solid rgba(255, 255, 255, 0.15);
   color: #fff;
-  font-size: 30px;
+  font-size: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 10px 30px var(--accent-indigo-glow);
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .record-btn-trigger:active {
@@ -402,35 +409,38 @@ html, body {
 
 .record-btn-trigger.recording {
   background: linear-gradient(135deg, #f43f5e, #e11d48);
-  box-shadow: 0 10px 35px rgba(244, 63, 94, 0.45);
-  animation: pulseBig 1.5s infinite;
+  box-shadow: 0 10px 35px rgba(244, 63, 94, 0.5);
+  animation: pulseBig 1.4s infinite;
 }
 
 @keyframes pulseBig {
   0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.6); }
-  50% { transform: scale(1.05); box-shadow: 0 0 0 14px rgba(244, 63, 94, 0); }
+  50% { transform: scale(1.06); box-shadow: 0 0 0 14px rgba(244, 63, 94, 0); }
 }
 
 .record-status-label {
   font-size: 14px;
   font-weight: 700;
   color: #fff;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .record-time-display {
   font-family: var(--font-mono);
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 800;
   letter-spacing: -0.03em;
   color: #38bdf8;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .audio-controls-row {
   display: flex;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 6px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 /* Audio Visualizer Waves */
@@ -439,10 +449,10 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  height: 28px;
+  height: 24px;
   width: 100%;
   max-width: 240px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .wave-bar {
@@ -456,17 +466,17 @@ html, body {
 /* Prominent Real-Time Live Transcript Stream Box */
 .live-stream-card {
   width: 100%;
-  background: rgba(9, 13, 22, 0.85);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: rgba(9, 13, 22, 0.9);
+  border: 1px solid rgba(99, 102, 241, 0.35);
   border-radius: 16px;
   padding: 12px;
-  margin-top: 10px;
-  margin-bottom: 12px;
+  margin-top: 8px;
+  margin-bottom: 10px;
   text-align: left;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .live-stream-header {
@@ -478,8 +488,8 @@ html, body {
 }
 
 .live-stream-body {
-  max-height: 140px;
-  min-height: 56px;
+  max-height: 160px;
+  min-height: 64px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -492,25 +502,21 @@ html, body {
   color: #38bdf8;
   font-style: italic;
   line-height: 1.4;
-  background: rgba(6, 182, 212, 0.1);
-  padding: 6px 10px;
-  border-radius: 8px;
+  background: rgba(6, 182, 212, 0.12);
+  padding: 8px 10px;
+  border-radius: 10px;
   border-left: 3px solid #06b6d4;
-  animation: pulseGlow 1.5s infinite alternate;
-}
-
-@keyframes pulseGlow {
-  0% { opacity: 0.7; }
-  100% { opacity: 1; }
+  min-height: 38px;
 }
 
 .live-history-pill {
   font-size: 12px;
   color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 4px 8px;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 10px;
+  border-radius: 8px;
   line-height: 1.4;
+  border-left: 2px solid var(--accent-indigo);
 }
 
 /* Camera & OCR Control Center */
