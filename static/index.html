@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>SessionFlow AI v2.7 | Grabación en Vivo, OCR & Copiloto</title>
+  <title>SessionFlow AI v2.9 | Grabación en Vivo, OCR & Copiloto</title>
   
   <!-- Cache Purge Script to prevent stale iOS Safari cache -->
   <script>
@@ -29,7 +29,7 @@
   <link rel="manifest" href="./manifest.json" />
   
   <!-- Apple Cupertino CSS with Cache Buster -->
-  <link rel="stylesheet" href="./css/styles.css?v=2.7" />
+  <link rel="stylesheet" href="./css/styles.css?v=2.9" />
 </head>
 <body>
 
@@ -376,7 +376,7 @@
     <div class="modal-sheet" style="max-width: 420px;">
       <div class="modal-header">
         <div class="modal-title">🎙️ Guardar Sesión Grabada</div>
-        <button class="btn-icon" style="width: 28px; height: 28px;" onclick="window.app.closeSaveSessionModal()">✕</button>
+        <button type="button" class="btn-icon" style="width: 28px; height: 28px;" onclick="window.app.closeSaveSessionModal()">✕</button>
       </div>
       <div class="modal-body">
         <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;">
@@ -396,10 +396,10 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-          <button class="btn-pill primary" style="justify-content: center; padding: 12px;" onclick="window.app.confirmSaveAndAnalyze()">
+          <button type="button" class="btn-pill primary" style="justify-content: center; padding: 12px;" onclick="window.app.confirmSaveAndAnalyze()">
             ⚡ Guardar y Armar Flujo con IA
           </button>
-          <button class="btn-pill secondary" style="justify-content: center; padding: 10px;" onclick="window.app.confirmSaveOnly()">
+          <button type="button" class="btn-pill secondary" style="justify-content: center; padding: 10px;" onclick="window.app.confirmSaveOnly()">
             💾 Solo Guardar en Historial
           </button>
         </div>
@@ -543,6 +543,6 @@
   <div id="toastShelf" class="toast-shelf"></div>
 
   <!-- Master Zero-Dependency JavaScript Application with Cache Buster -->
-  <script src="./js/app.js?v=2.8"></script>
+  <script src="./js/app.js?v=2.9"></script>
 </body>
 </html>

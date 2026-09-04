@@ -38,6 +38,7 @@
     lastSpeechTimestamp: Date.now(),
     speechEngine: null,
     totalWordCount: 0,
+    latestInterimText: '',
     
     geminiKey: localStorage.getItem('sessionflow_gemini_key') || '',
     speechLang: localStorage.getItem('sessionflow_speech_lang') || 'es-MX',
@@ -232,6 +233,10 @@
       const normalizedInterim = normalizeTechnicalTerms(interim);
       const normalizedFinal = normalizeTechnicalTerms(final);
 
+      if (normalizedInterim && normalizedInterim.trim().length > 0) {
+        state.latestInterimText = normalizedInterim.trim();
+      }
+
       // Display live streaming words
       const streamText = document.getElementById('liveSpeechStreamingText');
       if (streamText) {
@@ -252,9 +257,10 @@
       }
 
       // Finalized sentence with phonetic accuracy
-      if (normalizedFinal.trim().length > 1) {
+      if (normalizedFinal && normalizedFinal.trim().length > 1) {
         addTranscriptItem(normalizedFinal.trim(), 'Participante');
         addLiveTranscriptSnippet(normalizedFinal.trim());
+        state.latestInterimText = '';
       }
     };
 
@@ -267,6 +273,12 @@
     };
 
     recognition.onend = () => {
+      // Flush pending interim text if recognition ended
+      if (state.latestInterimText && state.latestInterimText.trim().length > 1) {
+        addTranscriptItem(state.latestInterimText.trim(), 'Participante');
+        addLiveTranscriptSnippet(state.latestInterimText.trim());
+        state.latestInterimText = '';
+      }
       // Auto-restart if still recording for continuous 1h+ sessions
       if (state.isRecording && !state.isPaused) {
         try { recognition.start(); } catch (e) {}
@@ -300,6 +312,7 @@
     state.isRecording = true;
     state.isPaused = false;
     state.lastSpeechTimestamp = Date.now();
+    state.latestInterimText = '';
 
     // 1. Update UI Elements
     const btnBig = document.getElementById('btnBigRecord');
@@ -395,6 +408,13 @@
     state.isRecording = false;
     state.isPaused = false;
 
+    // Flush any pending interim speech before stopping so no words are ever lost
+    if (state.latestInterimText && state.latestInterimText.trim().length > 1) {
+      addTranscriptItem(state.latestInterimText.trim(), 'Participante');
+      addLiveTranscriptSnippet(state.latestInterimText.trim());
+      state.latestInterimText = '';
+    }
+
     // Clear all intervals
     if (state.timerInterval) {
       clearInterval(state.timerInterval);
@@ -441,6 +461,7 @@
     if (btnPauseAudio) btnPauseAudio.style.display = 'none';
     if (btnStopAudio) btnStopAudio.style.display = 'none';
 
+    refreshTimelineDisplay();
     saveSessionData();
   }
 
@@ -529,6 +550,11 @@
   }
 
   function confirmSaveOnly() {
+    if (state.latestInterimText && state.latestInterimText.trim().length > 1) {
+      addTranscriptItem(state.latestInterimText.trim(), 'Participante');
+      addLiveTranscriptSnippet(state.latestInterimText.trim());
+      state.latestInterimText = '';
+    }
     const inputTitle = document.getElementById('saveModalSessionTitle');
     if (inputTitle && inputTitle.value.trim()) {
       state.title = inputTitle.value.trim();
@@ -537,10 +563,17 @@
     }
     closeSaveSessionModal();
     saveSessionData();
+    refreshTimelineDisplay();
     showToast(`💾 Sesión "${state.title}" guardada con éxito`, 'success');
+    switchTab('timeline');
   }
 
   function confirmSaveAndAnalyze() {
+    if (state.latestInterimText && state.latestInterimText.trim().length > 1) {
+      addTranscriptItem(state.latestInterimText.trim(), 'Participante');
+      addLiveTranscriptSnippet(state.latestInterimText.trim());
+      state.latestInterimText = '';
+    }
     const inputTitle = document.getElementById('saveModalSessionTitle');
     if (inputTitle && inputTitle.value.trim()) {
       state.title = inputTitle.value.trim();
@@ -549,6 +582,7 @@
     }
     closeSaveSessionModal();
     saveSessionData();
+    refreshTimelineDisplay();
     generateWorkflowAnalysis();
   }
 
@@ -1311,13 +1345,16 @@ INSTRUCCIONES CRÍTICAS:
       const topTimer = document.getElementById('sessionTimer');
       if (topTimer) topTimer.textContent = formatTimer(state.elapsedSeconds);
 
-      state.transcripts.forEach(t => {
-        renderTimelineBubble(t, 'speech');
+      refreshTimelineDisplay();
+
+      const strip = document.getElementById('photoGalleryStrip');
+      if (strip && state.photos.length > 0) {
+        strip.innerHTML = '';
+        state.photos.forEach(p => renderPhotoGalleryThumb(p));
+      }
+
+      state.transcripts.slice(-5).forEach(t => {
         addLiveTranscriptSnippet(t.text);
-      });
-      state.photos.forEach(p => {
-        renderPhotoGalleryThumb(p);
-        renderTimelineBubble(p, 'photo');
       });
 
       updateBadges();
