@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>SessionFlow AI v2.5 | Grabación, OCR & Copiloto</title>
+  <title>SessionFlow AI v2.6 | Grabación en Vivo, OCR & Copiloto</title>
   
   <!-- Cache Purge Script to prevent stale iOS Safari cache -->
   <script>
@@ -29,7 +29,7 @@
   <link rel="manifest" href="./manifest.json" />
   
   <!-- Apple Cupertino CSS with Cache Buster -->
-  <link rel="stylesheet" href="./css/styles.css?v=2.5" />
+  <link rel="stylesheet" href="./css/styles.css?v=2.6" />
 </head>
 <body>
 
@@ -40,8 +40,8 @@
       <div class="brand-badge">
         <div class="brand-logo">✨</div>
         <div class="brand-text">
-          <h1>SessionFlow AI <span style="font-size:9px; padding:2px 6px; border-radius:10px; background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.4); font-family:var(--font-mono);">v2.5</span></h1>
-          <p>Grabación · OCR Pantallas · Copiloto</p>
+          <h1>SessionFlow AI <span style="font-size:9px; padding:2px 6px; border-radius:10px; background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.4); font-family:var(--font-mono);">v2.6</span></h1>
+          <p>Grabación en Vivo · OCR Pantallas · Copiloto</p>
         </div>
       </div>
 
@@ -81,8 +81,9 @@
 
       <!-- ================= TAB 1: CAPTURA & GRABACIÓN ================= -->
       <section id="panel-capture" class="tab-panel active">
-        <div style="margin-bottom: 12px;">
+        <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
           <input id="sessionTitleInput" type="text" class="text-field" style="font-weight: 700; font-size: 14px;" value="Sesión de Capacitación y Procesos" placeholder="Título de la reunión o proceso..." />
+          <button class="btn-pill secondary" style="flex-shrink: 0; font-size: 11px;" onclick="window.app.openSaveSessionModal()">💾 Guardar Sesión</button>
         </div>
 
         <div class="capture-hero">
@@ -90,8 +91,8 @@
           <!-- Audio Recording Card -->
           <div class="glass-card audio-recorder-box">
             <div class="card-header" style="width: 100%;">
-              <div class="card-title">🎙️ Audio en Tiempo Real</div>
-              <span id="audioEngineBadge" class="badge-tag" style="color: #38bdf8;">Voz en Vivo</span>
+              <div class="card-title">🎙️ Grabación en Tiempo Real</div>
+              <span id="audioEngineBadge" class="badge-tag" style="color: #38bdf8;">Voz Continua</span>
             </div>
 
             <!-- Big Interactive Trigger Button -->
@@ -113,14 +114,32 @@
               <div class="wave-bar"></div>
             </div>
 
-            <!-- Live Speech Text Subtitle Box -->
-            <div id="liveCaptionBox" class="live-caption-box">
-              "Toca el micrófono para comenzar la transcripción continua..."
+            <!-- Prominent Real-time Live Transcript Stream Box -->
+            <div class="live-stream-card">
+              <div class="live-stream-header">
+                <div style="font-size: 11px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+                  <span id="liveStatusDot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+                  <span>Transcripción en Vivo:</span>
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <span id="liveWordCount" class="tab-badge" style="background: rgba(99,102,241,0.25); color: #818cf8;">0 palabras</span>
+                </div>
+              </div>
+
+              <div id="liveStreamBody" class="live-stream-body">
+                <div id="liveSpeechStreamingText" class="live-interim-text">
+                  "Presiona Grabar y habla; el texto irá apareciendo aquí en tiempo real palabra por palabra..."
+                </div>
+                <div id="recentLiveTranscriptList" style="display: flex; flex-direction: column; gap: 4px;">
+                  <!-- Past sentences will stack here live -->
+                </div>
+              </div>
             </div>
 
             <!-- Audio Action Bar -->
             <div class="audio-controls-row">
               <button id="btnPauseAudio" class="btn-pill secondary" style="display:none;" onclick="window.app.pauseRecording()">⏸️ Pausar</button>
+              <button id="btnFinishAndSave" class="btn-pill success" style="display:none;" onclick="window.app.stopAndPromptSave()">⏹️ Terminar y Guardar</button>
               <button id="btnProcessNow" class="btn-pill primary" onclick="window.app.processNow()">⚡ Armar Flujo Ahora</button>
             </div>
           </div>
@@ -170,7 +189,7 @@
           </div>
           <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
             <div>
-              <strong style="color:#fff;">1. Graba la sesión:</strong> Sin límites de tiempo. Si hay pausas, te preguntará si sigue la reunión.
+              <strong style="color:#fff;">1. Graba y lee en vivo:</strong> Visualiza el texto en tiempo real. Al terminar, dale un nombre y guárdala.
             </div>
             <div>
               <strong style="color:#fff;">2. Fotografía las pantallas:</strong> Captura Teams, Excel o menús para que la IA extraiga el texto exacto.
@@ -308,7 +327,7 @@
 
     </main>
 
-    <!-- Mobile Bottom Navigation Dock (Cupertino Style) -->
+    <!-- Mobile Bottom Navigation Dock -->
     <nav class="mobile-nav-dock">
       <button data-tab="capture" class="nav-dock-item active" onclick="window.app.switchTab('capture')">
         <span class="nav-dock-icon">🎙️</span>
@@ -341,7 +360,44 @@
 
   <!-- ================= MODALS & SHEETS ================= -->
 
-  <!-- 1. SETTINGS MODAL -->
+  <!-- 1. SAVE SESSION / NAME CUSTOM MODAL -->
+  <div id="modalSaveSession" class="modal-overlay">
+    <div class="modal-sheet" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">🎙️ Guardar Sesión Grabada</div>
+        <button class="btn-icon" style="width: 28px; height: 28px;" onclick="window.app.closeSaveSessionModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;">
+          <span id="saveModalDuration" class="badge-tag" style="color: #38bdf8;">⏱️ Duración: 00:00:00</span>
+          <span id="saveModalTranscripts" class="badge-tag" style="color: #10b981;">📝 0 frases</span>
+          <span id="saveModalPhotos" class="badge-tag" style="color: #a855f7;">📸 0 fotos</span>
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 4px; display: block;">
+            Nombre de la Sesión:
+          </label>
+          <input id="saveModalSessionTitle" type="text" class="text-field" placeholder="Ej: Capacitación Teams - Flujo de Pagos" />
+          <p style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">
+            Así se guardará en tu historial para consultarla en cualquier momento.
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+          <button class="btn-pill primary" style="justify-content: center; padding: 12px;" onclick="window.app.confirmSaveAndAnalyze()">
+            ⚡ Guardar y Armar Flujo con IA
+          </button>
+          <button class="btn-pill secondary" style="justify-content: center; padding: 10px;" onclick="window.app.confirmSaveOnly()">
+            💾 Solo Guardar en Historial
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 2. SETTINGS MODAL -->
   <div id="modalSettings" class="modal-overlay">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -382,7 +438,7 @@
   </div>
 
 
-  <!-- 2. SILENCE DETECTED ALERT SHEET -->
+  <!-- 3. SILENCE DETECTED ALERT SHEET -->
   <div id="modalSilenceAlert" class="modal-overlay">
     <div class="modal-sheet" style="max-width: 380px; text-align: center;">
       <div style="font-size: 40px; margin-bottom: 8px;">⏳</div>
@@ -402,7 +458,7 @@
   </div>
 
 
-  <!-- 3. PHOTO & OCR DETAIL MODAL -->
+  <!-- 4. PHOTO & OCR DETAIL MODAL -->
   <div id="modalPhotoDetail" class="modal-overlay">
     <div class="modal-sheet" style="max-width: 500px;">
       <div class="modal-header">
@@ -430,7 +486,7 @@
   </div>
 
 
-  <!-- 4. SESSION HISTORY MODAL -->
+  <!-- 5. SESSION HISTORY MODAL -->
   <div id="modalHistory" class="modal-overlay">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -454,6 +510,6 @@
   <div id="toastShelf" class="toast-shelf"></div>
 
   <!-- Master Zero-Dependency JavaScript Application with Cache Buster -->
-  <script src="./js/app.js?v=2.5"></script>
+  <script src="./js/app.js?v=2.6"></script>
 </body>
 </html>

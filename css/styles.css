@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SESSIONFLOW AI - APPLE CUPERTINO DARK GLASS DESIGN SYSTEM
+   SESSIONFLOW AI - APPLE CUPERTINO DARK GLASS DESIGN SYSTEM v2.6
    Zero-dependency, ultra-fast, iOS Safari & Desktop optimized
    ========================================================================== */
 
@@ -450,41 +450,67 @@ html, body {
   height: 6px;
   background: rgba(99, 102, 241, 0.4);
   border-radius: 4px;
-  transition: height 0.1s ease;
+  transition: height 0.08s ease;
 }
 
-.recording .wave-bar {
-  background: #38bdf8;
-  animation: waveDance 0.8s infinite ease-in-out alternate;
-}
-
-.wave-bar:nth-child(2) { animation-delay: 0.1s; }
-.wave-bar:nth-child(3) { animation-delay: 0.2s; }
-.wave-bar:nth-child(4) { animation-delay: 0.3s; }
-.wave-bar:nth-child(5) { animation-delay: 0.4s; }
-.wave-bar:nth-child(6) { animation-delay: 0.25s; }
-.wave-bar:nth-child(7) { animation-delay: 0.15s; }
-
-@keyframes waveDance {
-  0% { height: 4px; }
-  100% { height: 26px; }
-}
-
-/* Live Caption Box */
-.live-caption-box {
+/* Prominent Real-Time Live Transcript Stream Box */
+.live-stream-card {
   width: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 10px;
-  font-size: 12px;
-  color: var(--text-muted);
-  min-height: 48px;
+  background: rgba(9, 13, 22, 0.85);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 10px;
+  margin-bottom: 12px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.live-stream-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 6px;
+}
+
+.live-stream-body {
+  max-height: 140px;
+  min-height: 56px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+}
+
+.live-interim-text {
+  font-size: 13px;
+  color: #38bdf8;
   font-style: italic;
+  line-height: 1.4;
+  background: rgba(6, 182, 212, 0.1);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border-left: 3px solid #06b6d4;
+  animation: pulseGlow 1.5s infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.live-history-pill {
+  font-size: 12px;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1.4;
 }
 
 /* Camera & OCR Control Center */
@@ -789,7 +815,7 @@ html, body {
   border-color: var(--border-active);
 }
 
-/* Mobile Bottom Navigation Dock (Apple iOS Native Style) */
+/* Mobile Bottom Navigation Dock */
 .mobile-nav-dock {
   display: flex;
   position: fixed;

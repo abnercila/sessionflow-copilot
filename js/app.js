@@ -1,6 +1,6 @@
 /**
  * ==========================================================================
- * SESSIONFLOW AI v2.5 - MASTER ENGINE (STEVE JOBS BULLETPROOF EDITION)
+ * SESSIONFLOW AI v2.6 - MASTER ENGINE (REAL-TIME STREAM & SAVE NAMING)
  * Zero-Dependency, Direct Global Bindings, iPhone Safari & Desktop Infallible
  * ==========================================================================
  */
@@ -30,7 +30,7 @@
     audioContext: null,
     audioAnalyser: null,
     animFrameId: null,
-    mediaRecorder: null,
+    totalWordCount: 0,
     
     geminiKey: localStorage.getItem('sessionflow_gemini_key') || '',
     speechLang: localStorage.getItem('sessionflow_speech_lang') || 'es-MX'
@@ -118,16 +118,15 @@
     }
   }
 
-  // --- AUDIO RECORDING & VISUALIZER ENGINE ---
+  // --- AUDIO RECORDING & REAL-TIME VISUALIZER ---
   async function startRecording() {
     haptic(30);
 
-    // 1. Request hardware microphone stream for visualizer & iOS Safari permission
+    // 1. Request microphone hardware stream for visualizer & iOS permission
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         state.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         
-        // Setup Web Audio Analyser for live visualizer
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (AudioCtx) {
           state.audioContext = new AudioCtx();
@@ -140,15 +139,9 @@
           source.connect(state.audioAnalyser);
           startWaveformVisualizer();
         }
-
-        // Setup MediaRecorder fallback
-        if (window.MediaRecorder) {
-          state.mediaRecorder = new MediaRecorder(state.audioStream);
-          state.mediaRecorder.start(1000);
-        }
       }
     } catch (e) {
-      console.warn('Microphone stream permission error:', e);
+      console.warn('Microphone hardware permission info:', e);
     }
 
     // 2. Initialize Speech Recognition
@@ -171,8 +164,14 @@
     const dot = document.getElementById('pulseDot');
     if (dot) dot.className = 'pulse-dot recording';
 
+    const liveDot = document.getElementById('liveStatusDot');
+    if (liveDot) liveDot.style.background = '#10b981';
+
     const statusLabel = document.getElementById('recordStatusLabel');
-    if (statusLabel) statusLabel.textContent = 'Grabando... Toca para detener';
+    if (statusLabel) statusLabel.textContent = 'Grabando y transcribiendo en vivo...';
+
+    const streamingBox = document.getElementById('liveSpeechStreamingText');
+    if (streamingBox) streamingBox.textContent = '🎙️ Escuchando... habla y verás las palabras aquí en tiempo real.';
 
     const pauseBtn = document.getElementById('btnPauseAudio');
     if (pauseBtn) {
@@ -180,7 +179,10 @@
       pauseBtn.textContent = '⏸️ Pausar';
     }
 
-    // Start timer interval
+    const finishBtn = document.getElementById('btnFinishAndSave');
+    if (finishBtn) finishBtn.style.display = 'inline-flex';
+
+    // Start timer
     if (state.timerInterval) clearInterval(state.timerInterval);
     state.timerInterval = setInterval(() => {
       state.elapsedSeconds++;
@@ -191,7 +193,7 @@
       if (bigTimer) bigTimer.textContent = timeStr;
     }, 1000);
 
-    // Silence detection checker
+    // Silence detector
     if (state.silenceTimer) clearInterval(state.silenceTimer);
     state.silenceTimer = setInterval(() => {
       if (state.isRecording && !state.isPaused) {
@@ -202,14 +204,12 @@
       }
     }, 8000);
 
-    // Start Speech Recognition Engine
+    // Start recognition
     if (state.speechEngine) {
-      try {
-        state.speechEngine.start();
-      } catch (e) {}
+      try { state.speechEngine.start(); } catch (e) {}
     }
 
-    showToast('🎙️ Micrófono activo y grabando', 'success');
+    showToast('🎙️ Grabación y transcripción en vivo iniciada', 'success');
   }
 
   function startWaveformVisualizer() {
@@ -238,7 +238,6 @@
   function initSpeechRecognition() {
     const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechClass) {
-      console.warn('SpeechRecognition not supported in this browser.');
       const badge = document.getElementById('audioEngineBadge');
       if (badge) badge.textContent = 'Audio Local';
       return null;
@@ -260,19 +259,32 @@
         else interim += text;
       }
 
-      const caption = document.getElementById('liveCaptionBox');
-      if (caption) {
-        if (interim) caption.textContent = `"${interim.trim()}"`;
-        else if (final) caption.textContent = `"${final.trim()}"`;
+      // Real-time live streaming text display
+      const streamText = document.getElementById('liveSpeechStreamingText');
+      if (streamText) {
+        if (interim) {
+          streamText.textContent = `▶️ "${interim.trim()}"`;
+          streamText.style.display = 'block';
+        } else if (final) {
+          streamText.textContent = `✓ "${final.trim()}"`;
+        }
       }
 
+      // Live word count update
+      if (interim || final) {
+        const words = (interim + ' ' + final).trim().split(/\s+/).filter(Boolean).length;
+        updateLiveWordCount(words);
+      }
+
+      // When final sentence completes
       if (final.trim().length > 1) {
         addTranscriptItem(final.trim(), 'Participante');
+        addLiveTranscriptSnippet(final.trim());
       }
     };
 
     recognition.onerror = (err) => {
-      console.warn('Speech recognition warning:', err.error);
+      console.warn('Speech engine:', err.error);
     };
 
     recognition.onend = () => {
@@ -284,6 +296,33 @@
     return recognition;
   }
 
+  function addLiveTranscriptSnippet(text) {
+    const list = document.getElementById('recentLiveTranscriptList');
+    if (!list) return;
+
+    const item = document.createElement('div');
+    item.className = 'live-history-pill';
+    item.innerHTML = `<strong style="color:var(--accent-indigo); font-family:var(--font-mono); font-size:10px;">[${getCurrentTimeString()}]</strong> ${escapeHtml(text)}`;
+    list.prepend(item);
+
+    // Limit live preview stack to 5 most recent
+    if (list.children.length > 5) {
+      list.removeChild(list.lastChild);
+    }
+  }
+
+  function updateLiveWordCount(currentSentenceWords = 0) {
+    let total = 0;
+    state.transcripts.forEach(t => {
+      total += (t.text || '').trim().split(/\s+/).filter(Boolean).length;
+    });
+    total += currentSentenceWords;
+    state.totalWordCount = total;
+
+    const countBadge = document.getElementById('liveWordCount');
+    if (countBadge) countBadge.textContent = `${total} palabras`;
+  }
+
   function pauseRecording() {
     haptic(20);
     if (!state.isRecording) return;
@@ -291,6 +330,7 @@
     state.isPaused = !state.isPaused;
     const pauseBtn = document.getElementById('btnPauseAudio');
     const dot = document.getElementById('pulseDot');
+    const liveDot = document.getElementById('liveStatusDot');
     const statusLabel = document.getElementById('recordStatusLabel');
 
     if (state.isPaused) {
@@ -299,6 +339,7 @@
       }
       if (pauseBtn) pauseBtn.textContent = '▶️ Reanudar';
       if (dot) dot.className = 'pulse-dot paused';
+      if (liveDot) liveDot.style.background = '#f59e0b';
       if (statusLabel) statusLabel.textContent = 'Sesión en pausa';
       showToast('Pausa activada', 'warning');
     } else {
@@ -308,6 +349,7 @@
       state.lastSpeechTimestamp = Date.now();
       if (pauseBtn) pauseBtn.textContent = '⏸️ Pausar';
       if (dot) dot.className = 'pulse-dot recording';
+      if (liveDot) liveDot.style.background = '#10b981';
       if (statusLabel) statusLabel.textContent = 'Grabando...';
       showToast('Grabación reanudada', 'info');
     }
@@ -347,11 +389,17 @@
     const dot = document.getElementById('pulseDot');
     if (dot) dot.className = 'pulse-dot';
 
+    const liveDot = document.getElementById('liveStatusDot');
+    if (liveDot) liveDot.style.background = '#64748b';
+
     const statusLabel = document.getElementById('recordStatusLabel');
     if (statusLabel) statusLabel.textContent = 'Toca el botón para Grabar';
 
     const pauseBtn = document.getElementById('btnPauseAudio');
     if (pauseBtn) pauseBtn.style.display = 'none';
+
+    const finishBtn = document.getElementById('btnFinishAndSave');
+    if (finishBtn) finishBtn.style.display = 'none';
 
     saveSessionData();
   }
@@ -360,8 +408,13 @@
     if (!state.isRecording) startRecording();
     else {
       stopRecording();
-      showToast('Grabación detenida. Toca "Armar Flujo Ahora".', 'info');
+      openSaveSessionModal();
     }
+  }
+
+  function stopAndPromptSave() {
+    stopRecording();
+    openSaveSessionModal();
   }
 
   function addTranscriptItem(text, speaker = 'Participante') {
@@ -374,7 +427,64 @@
     state.transcripts.push(item);
     renderTimelineBubble(item, 'speech');
     updateBadges();
+    updateLiveWordCount(0);
     saveSessionData();
+  }
+
+  // --- SAVE SESSION MODAL (CUSTOM NAME) ---
+  function openSaveSessionModal() {
+    haptic(25);
+    const modal = document.getElementById('modalSaveSession');
+    const inputTitle = document.getElementById('saveModalSessionTitle');
+    const durBadge = document.getElementById('saveModalDuration');
+    const txBadge = document.getElementById('saveModalTranscripts');
+    const photoBadge = document.getElementById('saveModalPhotos');
+
+    // Generate smart default name with date & time if title is still default
+    const now = new Date();
+    const dateStr = `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}`;
+    const timeStr = getCurrentTimeString().slice(0, 5);
+    
+    let defaultName = state.title;
+    if (!defaultName || defaultName === 'Sesión de Capacitación y Procesos' || defaultName === 'Nueva Sesión de Trabajo') {
+      defaultName = `Sesión Grabada - ${dateStr} ${timeStr}`;
+    }
+
+    if (inputTitle) inputTitle.value = defaultName;
+    if (durBadge) durBadge.textContent = `⏱️ Duración: ${formatTimer(state.elapsedSeconds)}`;
+    if (txBadge) txBadge.textContent = `📝 ${state.transcripts.length} frases (${state.totalWordCount} palabras)`;
+    if (photoBadge) photoBadge.textContent = `📸 ${state.photos.length} fotos`;
+
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeSaveSessionModal() {
+    const modal = document.getElementById('modalSaveSession');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function confirmSaveOnly() {
+    const inputTitle = document.getElementById('saveModalSessionTitle');
+    if (inputTitle && inputTitle.value.trim()) {
+      state.title = inputTitle.value.trim();
+      const mainTitleInput = document.getElementById('sessionTitleInput');
+      if (mainTitleInput) mainTitleInput.value = state.title;
+    }
+    closeSaveSessionModal();
+    saveSessionData();
+    showToast(`💾 Sesión "${state.title}" guardada en el historial`, 'success');
+  }
+
+  function confirmSaveAndAnalyze() {
+    const inputTitle = document.getElementById('saveModalSessionTitle');
+    if (inputTitle && inputTitle.value.trim()) {
+      state.title = inputTitle.value.trim();
+      const mainTitleInput = document.getElementById('sessionTitleInput');
+      if (mainTitleInput) mainTitleInput.value = state.title;
+    }
+    closeSaveSessionModal();
+    saveSessionData();
+    generateWorkflowAnalysis();
   }
 
   // --- CAMERA & OCR INTELLIGENCE ---
@@ -957,7 +1067,7 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
       if (idx >= 0) history[idx] = summary;
       else history.unshift(summary);
 
-      localStorage.setItem('sessionflow_saved_sessions', JSON.stringify(history.slice(0, 20)));
+      localStorage.setItem('sessionflow_saved_sessions', JSON.stringify(history.slice(0, 25)));
     } catch (e) {}
   }
 
@@ -983,13 +1093,17 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
       const topTimer = document.getElementById('sessionTimer');
       if (topTimer) topTimer.textContent = formatTimer(state.elapsedSeconds);
 
-      state.transcripts.forEach(t => renderTimelineBubble(t, 'speech'));
+      state.transcripts.forEach(t => {
+        renderTimelineBubble(t, 'speech');
+        addLiveTranscriptSnippet(t.text);
+      });
       state.photos.forEach(p => {
         renderPhotoGalleryThumb(p);
         renderTimelineBubble(p, 'photo');
       });
 
       updateBadges();
+      updateLiveWordCount(0);
       if (state.analysis) renderWorkflow(state.analysis);
     } catch (e) {}
   }
@@ -1004,6 +1118,7 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
       state.photos = [];
       state.analysis = null;
       state.elapsedSeconds = 0;
+      state.totalWordCount = 0;
 
       const titleInput = document.getElementById('sessionTitleInput');
       if (titleInput) titleInput.value = state.title;
@@ -1013,6 +1128,12 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
 
       const bigTimer = document.getElementById('recordTimeLarge');
       if (bigTimer) bigTimer.textContent = '00:00:00';
+
+      const streamText = document.getElementById('liveSpeechStreamingText');
+      if (streamText) streamText.textContent = 'Presiona Grabar y habla; el texto irá apareciendo aquí en tiempo real...';
+
+      const recentList = document.getElementById('recentLiveTranscriptList');
+      if (recentList) recentList.innerHTML = '';
 
       const timeline = document.getElementById('timelineContainer');
       if (timeline) timeline.innerHTML = '<div id="timelineEmptyNotice" style="text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px;">No hay transcripciones todavía.</div>';
@@ -1024,6 +1145,7 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
       if (stepsList) stepsList.innerHTML = '';
 
       updateBadges();
+      updateLiveWordCount(0);
       saveSessionData();
       switchTab('capture');
       showToast('Nueva sesión creada', 'success');
@@ -1036,6 +1158,11 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
     startRecording,
     pauseRecording,
     stopRecording,
+    stopAndPromptSave,
+    openSaveSessionModal,
+    closeSaveSessionModal,
+    confirmSaveOnly,
+    confirmSaveAndAnalyze,
     processNow: () => {
       stopRecording();
       generateWorkflowAnalysis();
@@ -1106,7 +1233,10 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
         if (container) container.innerHTML = '<div id="timelineEmptyNotice" style="text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px;">Transcripción limpia.</div>';
         const photoStrip = document.getElementById('photoGalleryStrip');
         if (photoStrip) photoStrip.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 10px; font-style: italic;">No hay fotos aún.</div>';
+        const recentList = document.getElementById('recentLiveTranscriptList');
+        if (recentList) recentList.innerHTML = '';
         updateBadges();
+        updateLiveWordCount(0);
         saveSessionData();
         showToast('Registro limpiado', 'info');
       }
@@ -1116,6 +1246,7 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
       const input = document.getElementById('inputManualNote');
       if (input && input.value.trim()) {
         addTranscriptItem(input.value.trim(), 'Nota Manual');
+        addLiveTranscriptSnippet(input.value.trim());
         input.value = '';
         showToast('Nota añadida', 'success');
       }
@@ -1192,7 +1323,7 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
     finishSilence: () => {
       closeSilenceModal();
       stopRecording();
-      generateWorkflowAnalysis();
+      openSaveSessionModal();
     },
     deleteCurrentPhoto: () => {
       if (selectedPhotoForModal) {
@@ -1216,6 +1347,6 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
 
   // Run on startup
   restoreSavedSession();
-  console.log('SessionFlow AI v2.5 initialized.');
+  console.log('SessionFlow AI v2.6 Live Stream & Save Ready.');
 
 })();
