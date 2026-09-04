@@ -1014,6 +1014,49 @@ html, body {
   border-color: var(--accent-indigo);
 }
 
+/* Technical Vocabulary & Chips */
+.vocab-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.vocab-chip {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #c7d2fe;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.vocab-chip .chip-remove {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-weight: 900;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.vocab-chip .chip-remove:hover {
+  color: var(--accent-rose);
+}
+
+.vocab-add-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
 /* Utility Helpers */
 .hidden { display: none !important; }
 .text-indigo { color: var(--accent-indigo); }
@@ -1022,3 +1065,4 @@ html, body {
 .text-rose { color: var(--accent-rose); }
 .text-amber { color: var(--accent-amber); }
 .font-mono { font-family: var(--font-mono); }
+

@@ -214,14 +214,15 @@
 
       <!-- ================= TAB 2: TRANSCRIPCIÓN COMPLETA ================= -->
       <section id="panel-timeline" class="tab-panel">
-        <div class="glass-card" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+        <div class="glass-card" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
           <div>
             <div class="card-title">📝 Registro Cronológico</div>
             <div class="card-subtitle">Voz grabada y fotos sincronizadas en tiempo real</div>
           </div>
-          <div style="display: flex; gap: 6px;">
-            <button id="btnDownloadTxt" class="btn-pill secondary" onclick="window.app.downloadTranscriptTxt()">⬇️ Guardar .txt</button>
-            <button id="btnClearTimeline" class="btn-pill secondary" onclick="window.app.clearTimeline()">🗑️ Limpiar</button>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button id="btnRefineTranscript" class="btn-pill primary" style="font-size: 11px; padding: 6px 10px;" onclick="window.app.refineTranscriptWithAI()">✨ Refinar con IA</button>
+            <button id="btnDownloadTxt" class="btn-pill secondary" style="font-size: 11px; padding: 6px 10px;" onclick="window.app.downloadTranscriptTxt()">⬇️ .txt</button>
+            <button id="btnClearTimeline" class="btn-pill secondary" style="font-size: 11px; padding: 6px 10px;" onclick="window.app.clearTimeline()">🗑️ Limpiar</button>
           </div>
         </div>
 
@@ -440,6 +441,28 @@
           </select>
         </div>
 
+        <!-- Enterprise Technical Lexicon Section -->
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px; margin-top: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="font-size: 12px; font-weight: 700; color: #fff;">
+              🏷️ Siglas & Vocabulario de Empresa:
+            </label>
+            <button type="button" class="btn-pill secondary" style="padding: 2px 6px; font-size: 10px;" onclick="window.app.resetVocabToDefaults()">Restaurar</button>
+          </div>
+          <p style="font-size: 10px; color: var(--text-dim); margin-bottom: 6px;">
+            Siglas que la app corrige y reconoce con precisión en vivo (ej. SAPI, RMI, GMO, SAP):
+          </p>
+          
+          <div id="vocabChipsContainer" class="vocab-tags-container">
+            <!-- Chips rendered dynamically -->
+          </div>
+
+          <form onsubmit="window.app.handleVocabSubmit(event)" class="vocab-add-row">
+            <input id="inputNewVocabTerm" type="text" class="text-field" style="font-size: 11px; padding: 6px 8px;" placeholder="Agregar nueva sigla (ej. SAPI, GMO, RMI)..." />
+            <button type="submit" class="btn-pill secondary" style="padding: 6px 12px; font-size: 11px; flex-shrink: 0;">+ Añadir</button>
+          </form>
+        </div>
+
         <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
           <button id="btnSaveSettings" class="btn-pill primary" style="width: 100%;" onclick="window.app.saveSettings()">Guardar Ajustes</button>
         </div>
@@ -520,6 +543,6 @@
   <div id="toastShelf" class="toast-shelf"></div>
 
   <!-- Master Zero-Dependency JavaScript Application with Cache Buster -->
-  <script src="./js/app.js?v=2.7"></script>
+  <script src="./js/app.js?v=2.8"></script>
 </body>
 </html>

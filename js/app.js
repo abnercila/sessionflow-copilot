@@ -1,12 +1,22 @@
 /**
  * ==========================================================================
- * SESSIONFLOW AI v2.7 - MASTER ENGINE (DIRECT SPEECH STREAM & EXPLICIT STOP)
+ * SESSIONFLOW AI v2.8 - MASTER ENGINE (PHONETIC CORRECTION & TECHNICAL LEXICON)
+ * Precision Speech Stream, Enterprise Vocabulary (SAPI, RMI, GMO, SAP) & AI Refiner
  * Zero-Dependency, Direct Global Bindings, iOS Safari & Desktop Infallible
  * ==========================================================================
  */
 
 (function() {
   'use strict';
+
+  // --- DEFAULT TECHNICAL & ENTERPRISE VOCABULARY ---
+  const DEFAULT_VOCABULARY = [
+    'SAPI', 'RMI', 'GMO', 'SAP', 'API', 'APIs', 'ERP', 'CRM', 'SQL',
+    'AWS', 'Azure', 'GCP', 'Jira', 'Confluence', 'SLA', 'KPI', 'QA', 'PR',
+    'Webhook', 'Endpoint', 'Frontend', 'Backend', 'DevOps', 'OAuth', 'SSO',
+    'Token', 'JSON', 'REST', 'GraphQL', 'Teams', 'Excel', 'Microservicio',
+    'Scrum', 'Sprint', 'Postman', 'Swagger', 'Pipeline', 'Release'
+  ];
 
   // --- APPLICATION STATE ---
   const state = {
@@ -30,10 +40,79 @@
     totalWordCount: 0,
     
     geminiKey: localStorage.getItem('sessionflow_gemini_key') || '',
-    speechLang: localStorage.getItem('sessionflow_speech_lang') || 'es-MX'
+    speechLang: localStorage.getItem('sessionflow_speech_lang') || 'es-MX',
+    customVocabulary: JSON.parse(localStorage.getItem('sessionflow_custom_vocabulary') || JSON.stringify(DEFAULT_VOCABULARY))
   };
 
   let selectedPhotoForModal = null;
+
+  // --- PHONETIC NORMALIZATION ENGINE ---
+  function normalizeTechnicalTerms(text) {
+    if (!text || typeof text !== 'string') return '';
+    let processed = text;
+
+    // 1. Specific Phonetic Acronym Regexes for Spanish speech recognition quirks:
+    
+    // SAPI: "saad pi", "saat pi", "sad pi", "sat pi", "sa pi", "happy", "sappy", "s a p i", "ese a pe i"
+    processed = processed.replace(/\b(saad\s*pi|saat\s*pi|sad\s*pi|sat\s*pi|sa\s*pi|happy\s*de\s*pagos|sappy|s\s*a\s*p\s*i|ese\s*a\s*pe\s*i)\b/gi, 'SAPI');
+    // Contextual SAPI when speech engine hears "happy" in software/business contexts
+    processed = processed.replace(/\b(en\s*el|del|al|sistema|aplicaci[oó]n|servicio|flujo|endpoint|api|pantalla|m[oó]dulo|proceso)\s+happy\b/gi, '$1 SAPI');
+    processed = processed.replace(/\bhappy\s+(de\s*pagos|de\s*facturaci[oó]n|core|v\d+|cloud|gateway|services?)\b/gi, 'SAPI $1');
+
+    // RMI: "ere mi", "erre eme i", "ere eme i", "r m i", "armi", "erne i", "r mi"
+    processed = processed.replace(/\b(ere\s*eme\s*i|erre\s*eme\s*i|ere\s*mi|r\s*m\s*i|armi|erne\s*i|r\s*mi)\b/gi, 'RMI');
+
+    // GMO: "ge eme o", "ge me o", "g m o", "gmeo", "llimo", "jimo"
+    processed = processed.replace(/\b(ge\s*eme\s*o|ge\s*me\s*o|g\s*m\s*o|g\s*eme\s*o|gmeo|llimo|jimo)\b/gi, 'GMO');
+
+    // SAP: "ese a pe", "es a pe", "s a p"
+    processed = processed.replace(/\b(ese\s*a\s*pe|es\s*a\s*pe|s\s*a\s*p)\b/gi, 'SAP');
+
+    // API & APIs: "a pe i", "apei", "a p i", "a pe is", "a p i s"
+    processed = processed.replace(/\b(a\s*pe\s*is|a\s*p\s*i\s*s|apeis)\b/gi, 'APIs');
+    processed = processed.replace(/\b(a\s*pe\s*i|a\s*p\s*i|apei)\b/gi, 'API');
+
+    // SQL: "ese cu ele", "s q l", "secuel", "sicuol", "sikuel"
+    processed = processed.replace(/\b(ese\s*cu\s*ele|s\s*q\s*l|secuel|sicuol|sikuel)\b/gi, 'SQL');
+
+    // AWS: "a doble u ese", "a w s"
+    processed = processed.replace(/\b(a\s*doble\s*u\s*ese|a\s*w\s*s)\b/gi, 'AWS');
+
+    // ERP, CRM, SLA, KPI, QA, PR, SSO, OAuth, JSON
+    processed = processed.replace(/\b(e\s*ere\s*pe|e\s*r\s*p)\b/gi, 'ERP');
+    processed = processed.replace(/\b(ce\s*ere\s*eme|c\s*r\s*m)\b/gi, 'CRM');
+    processed = processed.replace(/\b(ese\s*ele\s*a|s\s*l\s*a)\b/gi, 'SLA');
+    processed = processed.replace(/\b(ca\s*pe\s*i|k\s*p\s*i)\b/gi, 'KPI');
+    processed = processed.replace(/\b(cu\s*a|q\s*a)\b/gi, 'QA');
+    processed = processed.replace(/\b(pe\s*ere|p\s*r)\b/gi, 'PR');
+    processed = processed.replace(/\b(ese\s*ese\s*o|s\s*s\s*o)\b/gi, 'SSO');
+    processed = processed.replace(/\b(ou\s*ot|o\s*aut|oaut)\b/gi, 'OAuth');
+    processed = processed.replace(/\b(jeison|j\s*son|geison)\b/gi, 'JSON');
+    processed = processed.replace(/\b(fron\s*en|front\s*en|fronen)\b/gi, 'Frontend');
+    processed = processed.replace(/\b(bak\s*en|back\s*en|baken)\b/gi, 'Backend');
+
+    // 2. Custom User Vocabulary Case & Acronym Normalization
+    if (Array.isArray(state.customVocabulary)) {
+      state.customVocabulary.forEach(term => {
+        if (!term || term.length < 2) return;
+        const cleanTerm = term.trim();
+        const escaped = cleanTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        // If acronym (e.g. "GMO", "SAPI"), match spaced letters "g m o"
+        if (/^[A-Z0-9_-]+$/i.test(cleanTerm) && cleanTerm.length <= 6) {
+          const spaced = cleanTerm.split('').join('\\s*');
+          const regSpaced = new RegExp(`\\b${spaced}\\b`, 'gi');
+          processed = processed.replace(regSpaced, cleanTerm);
+        }
+        
+        // Exact word boundary replacement with proper capitalization
+        const regExact = new RegExp(`\\b${escaped}\\b`, 'gi');
+        processed = processed.replace(regExact, cleanTerm);
+      });
+    }
+
+    return processed;
+  }
 
   // --- HAPTICS & TOAST ---
   function haptic(duration = 15) {
@@ -149,13 +228,17 @@
         else interim += text;
       }
 
+      // Real-time Phonetic Normalization (SAPI, RMI, GMO, etc.)
+      const normalizedInterim = normalizeTechnicalTerms(interim);
+      const normalizedFinal = normalizeTechnicalTerms(final);
+
       // Display live streaming words
       const streamText = document.getElementById('liveSpeechStreamingText');
       if (streamText) {
-        if (interim) {
-          streamText.textContent = `▶️ "${interim.trim()}"`;
-        } else if (final) {
-          streamText.textContent = `✓ "${final.trim()}"`;
+        if (normalizedInterim) {
+          streamText.textContent = `▶️ "${normalizedInterim.trim()}"`;
+        } else if (normalizedFinal) {
+          streamText.textContent = `✓ "${normalizedFinal.trim()}"`;
         }
       }
 
@@ -163,15 +246,15 @@
       animateWavebars(true);
 
       // Live word counter
-      if (interim || final) {
-        const words = (interim + ' ' + final).trim().split(/\s+/).filter(Boolean).length;
+      if (normalizedInterim || normalizedFinal) {
+        const words = (normalizedInterim + ' ' + normalizedFinal).trim().split(/\s+/).filter(Boolean).length;
         updateLiveWordCount(words);
       }
 
-      // Finalized sentence
-      if (final.trim().length > 1) {
-        addTranscriptItem(final.trim(), 'Participante');
-        addLiveTranscriptSnippet(final.trim());
+      // Finalized sentence with phonetic accuracy
+      if (normalizedFinal.trim().length > 1) {
+        addTranscriptItem(normalizedFinal.trim(), 'Participante');
+        addLiveTranscriptSnippet(normalizedFinal.trim());
       }
     };
 
@@ -946,6 +1029,158 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
     if (photoBadge) photoBadge.textContent = `${state.photos.length} fotos`;
   }
 
+  function refreshTimelineDisplay() {
+    const container = document.getElementById('timelineContainer');
+    const emptyNotice = document.getElementById('timelineEmptyNotice');
+    if (!container) return;
+
+    if (state.transcripts.length === 0 && state.photos.length === 0) {
+      container.innerHTML = '<div id="timelineEmptyNotice" style="text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px;">No hay transcripciones todavía.<br/>Inicia la grabación en la pestaña "Grabar" para ver la transcripción aquí.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    state.transcripts.forEach(t => renderTimelineBubble(t, 'speech'));
+    state.photos.forEach(p => renderTimelineBubble(p, 'photo'));
+    updateBadges();
+    updateLiveWordCount(0);
+  }
+
+  // --- REFINAMIENTO DE TRANSCRIPCIÓN CON IA & OCR ---
+  async function refineTranscriptWithAI() {
+    haptic(30);
+    if (state.transcripts.length === 0) {
+      showToast('No hay transcripción grabada aún para refinar', 'warning');
+      return;
+    }
+
+    const key = state.geminiKey || localStorage.getItem('sessionflow_gemini_key');
+    if (!key) {
+      let count = 0;
+      state.transcripts.forEach(t => {
+        const norm = normalizeTechnicalTerms(t.text);
+        if (norm !== t.text) {
+          t.text = norm;
+          count++;
+        }
+      });
+      refreshTimelineDisplay();
+      saveSessionData();
+      showToast(`✨ Normalización aplicada (${count} correcciones). Para refinamiento profundo con IA, agrega tu API Key en Ajustes ⚙️.`, 'info');
+      return;
+    }
+
+    showToast('✨ Refinando transcripción y corrigiendo siglas con IA...', 'info');
+
+    const ocrContext = state.photos.map((p, i) => `[Pantalla #${i+1}]: ${p.ocrText}`).join('\n');
+    const vocabList = (state.customVocabulary || []).join(', ');
+    const rawTranscripts = state.transcripts.map((t, idx) => `[ID:${idx}] ${t.speaker}: ${t.text}`).join('\n');
+
+    const prompt = `Eres un experto en Lingüística y Corrección de Transcripciones de Sistemas Empresariales.
+Analiza la siguiente transcripción de una reunión de trabajo generada por voz, la cual tiene errores fonéticos y de reconocimiento acústico en siglas técnicas, sistemas y nombres de aplicaciones.
+
+=== VOCABULARIO TÉCNICO Y NOMENCLATURAS CLAVE ===
+${vocabList}
+
+=== TEXTO EXTRAÍDO DE LAS PANTALLAS DE LA REUNIÓN (OCR DE TEAMS/SOFTWARE) ===
+${ocrContext || '(Sin fotos registradas)'}
+
+=== TRANSCRIPCIÓN EN BRUTO DE LA REUNIÓN ===
+${rawTranscripts}
+
+INSTRUCCIONES CRÍTICAS:
+1. Reemplaza cualquier error fonético o mala interpretación acústica (ej: "saad pi", "happy", "sa pi" -> "SAPI"; "ere mi", "armi" -> "RMI"; "ge me o" -> "GMO"; "ese a pe" -> "SAP"; "a pe i" -> "API"; "ese cu ele" -> "SQL"; etc.).
+2. Cruza con el texto de las pantallas (OCR) para identificar nombres reales de módulos, botones y rutas que se hayan pronunciado en la sesión.
+3. NO resumas, NO inventes y NO elimines el contenido ni los turnos de palabra del usuario. Mantén el orden exacto.
+4. Devuelve ÚNICAMENTE un arreglo JSON con las frases corregidas con este formato exacto:
+[
+  { "id": 0, "speaker": "Participante", "text": "texto corregido aquí con siglas correctas..." }
+]`;
+
+    try {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const refinedItems = JSON.parse(jsonMatch[0]);
+          refinedItems.forEach(item => {
+            if (typeof item.id === 'number' && state.transcripts[item.id]) {
+              state.transcripts[item.id].text = normalizeTechnicalTerms(item.text);
+              if (item.speaker) state.transcripts[item.id].speaker = item.speaker;
+            }
+          });
+
+          refreshTimelineDisplay();
+          saveSessionData();
+          showToast('✨ ¡Transcripción refinada y siglas corregidas!', 'success');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('AI Refine error:', e);
+    }
+
+    // Fallback local normalization
+    state.transcripts.forEach(t => {
+      t.text = normalizeTechnicalTerms(t.text);
+    });
+    refreshTimelineDisplay();
+    saveSessionData();
+    showToast('✨ Normalización fonética completada', 'success');
+  }
+
+  // --- VOCABULARY MANAGEMENT ---
+  function renderVocabChips() {
+    const container = document.getElementById('vocabChipsContainer');
+    if (!container) return;
+
+    if (!Array.isArray(state.customVocabulary) || state.customVocabulary.length === 0) {
+      container.innerHTML = '<span style="font-size:11px; color:var(--text-dim); font-style:italic;">No hay siglas guardadas.</span>';
+      return;
+    }
+
+    container.innerHTML = state.customVocabulary.map(term => `
+      <span class="vocab-chip">
+        <span>${escapeHtml(term)}</span>
+        <span class="chip-remove" onclick="window.app.removeCustomVocabTerm('${escapeHtml(term)}')" title="Eliminar">✕</span>
+      </span>
+    `).join('');
+  }
+
+  function addCustomVocabTerm(term) {
+    if (!term || typeof term !== 'string') return;
+    const clean = term.trim().toUpperCase();
+    if (!clean) return;
+
+    if (!state.customVocabulary.includes(clean)) {
+      state.customVocabulary.push(clean);
+      localStorage.setItem('sessionflow_custom_vocabulary', JSON.stringify(state.customVocabulary));
+      renderVocabChips();
+      showToast(`Sigla "${clean}" agregada al diccionario`, 'success');
+    }
+  }
+
+  function removeCustomVocabTerm(term) {
+    state.customVocabulary = state.customVocabulary.filter(t => t !== term);
+    localStorage.setItem('sessionflow_custom_vocabulary', JSON.stringify(state.customVocabulary));
+    renderVocabChips();
+    showToast(`"${term}" eliminada`, 'info');
+  }
+
+  function resetVocabToDefaults() {
+    state.customVocabulary = [...DEFAULT_VOCABULARY];
+    localStorage.setItem('sessionflow_custom_vocabulary', JSON.stringify(state.customVocabulary));
+    renderVocabChips();
+    showToast('Vocabulario restaurado por defecto', 'info');
+  }
+
   // --- MODAL CONTROLLERS ---
   function openSilenceModal() {
     haptic(35);
@@ -984,6 +1219,7 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
     haptic(15);
     const inputKey = document.getElementById('inputGeminiKey');
     if (inputKey) inputKey.value = state.geminiKey || '';
+    renderVocabChips();
     const modal = document.getElementById('modalSettings');
     if (modal) modal.classList.add('active');
   }
@@ -1166,6 +1402,18 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
       e.target.value = '';
     },
     generateWorkflowAnalysis,
+    refineTranscriptWithAI,
+    addCustomVocabTerm,
+    removeCustomVocabTerm,
+    resetVocabToDefaults,
+    handleVocabSubmit: (e) => {
+      e.preventDefault();
+      const input = document.getElementById('inputNewVocabTerm');
+      if (input && input.value.trim()) {
+        addCustomVocabTerm(input.value.trim());
+        input.value = '';
+      }
+    },
     copyClaudePrompt: async () => {
       haptic(30);
       const tx = document.getElementById('claudePromptTextarea');
@@ -1227,8 +1475,9 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
       e.preventDefault();
       const input = document.getElementById('inputManualNote');
       if (input && input.value.trim()) {
-        addTranscriptItem(input.value.trim(), 'Nota Manual');
-        addLiveTranscriptSnippet(input.value.trim());
+        const text = normalizeTechnicalTerms(input.value.trim());
+        addTranscriptItem(text, 'Nota Manual');
+        addLiveTranscriptSnippet(text);
         input.value = '';
         showToast('Nota añadida', 'success');
       }
@@ -1329,6 +1578,7 @@ Responde de forma concisa, útil, motivadora y clara en español.`;
 
   // Run on startup
   restoreSavedSession();
-  console.log('SessionFlow AI v2.7 Live Stream & Save Ready.');
+  console.log('SessionFlow AI v2.8 Precision Phonetic & Lexicon Ready.');
 
 })();
+
