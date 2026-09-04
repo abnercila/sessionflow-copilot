@@ -1,0 +1,9 @@
+{
+  "name": "sessionflow",
+  "version": "2.5.1",
+  "private": true,
+  "description": "SessionFlow AI - Apple Cupertino Dark Glass Edition",
+  "scripts": {
+    "build": "echo 'Build complete'"
+  }
+}

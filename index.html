@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>SessionFlow AI v2.5 | Grabación, OCR & Copiloto</title>
+  
+  <!-- Cache Purge Script to prevent stale iOS Safari cache -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) registration.unregister();
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) caches.delete(name);
+      });
+    }
+  </script>
+
+  <!-- Apple iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SessionFlow" />
+  <meta name="theme-color" content="#07090e" />
+  
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="manifest" href="./manifest.json" />
+  
+  <!-- Apple Cupertino CSS with Cache Buster -->
+  <link rel="stylesheet" href="./css/styles.css?v=2.5" />
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Top Apple Navigation Bar -->
+    <header class="top-header">
+      <div class="brand-badge">
+        <div class="brand-logo">✨</div>
+        <div class="brand-text">
+          <h1>SessionFlow AI <span style="font-size:9px; padding:2px 6px; border-radius:10px; background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.4); font-family:var(--font-mono);">v2.5</span></h1>
+          <p>Grabación · OCR Pantallas · Copiloto</p>
+        </div>
+      </div>
+
+      <!-- Live Session Status Pill -->
+      <div class="session-status-pill">
+        <div id="pulseDot" class="pulse-dot"></div>
+        <span id="sessionTimer">00:00:00</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="header-actions">
+        <button id="btnNewSession" class="btn-pill secondary" onclick="window.app.startNewSession()" title="Nueva Sesión">
+          <span style="color:#10b981; font-weight:800;">+</span>
+          <span style="display:none;" class="show-desktop">Nueva</span>
+        </button>
+        <button id="btnOpenHistory" class="btn-icon" onclick="window.app.openHistoryModal()" title="Historial">📜</button>
+        <button id="btnOpenSettings" class="btn-icon" onclick="window.app.openSettingsModal()" title="Ajustes y API Key">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Desktop Tab Navigation (Hidden on Mobile) -->
+    <nav class="desktop-nav" style="display: none;">
+      <div class="desktop-nav-tabs">
+        <button data-tab="capture" class="nav-tab-item active" onclick="window.app.switchTab('capture')">🎙️ Grabar & Fotos</button>
+        <button data-tab="timeline" class="nav-tab-item" onclick="window.app.switchTab('timeline')">📝 Transcripción <span id="badgeTimelineCount" class="tab-badge">0</span></button>
+        <button data-tab="workflow" class="nav-tab-item" onclick="window.app.switchTab('workflow')">📊 Flujos & Pasos</button>
+        <button data-tab="copilot" class="nav-tab-item" onclick="window.app.switchTab('copilot')">🤖 Copiloto IA</button>
+        <button data-tab="claude" class="nav-tab-item" onclick="window.app.switchTab('claude')">🚀 Exportar Claude</button>
+      </div>
+      <div style="font-size: 11px; color: var(--text-dim);">
+        <input id="sessionTitleInputDesktop" type="text" class="text-field" style="padding: 3px 8px; width: 220px; font-size: 11px;" value="Sesión de Capacitación y Procesos" />
+      </div>
+    </nav>
+
+    <!-- Main Dynamic Content Panels -->
+    <main class="app-main">
+
+      <!-- ================= TAB 1: CAPTURA & GRABACIÓN ================= -->
+      <section id="panel-capture" class="tab-panel active">
+        <div style="margin-bottom: 12px;">
+          <input id="sessionTitleInput" type="text" class="text-field" style="font-weight: 700; font-size: 14px;" value="Sesión de Capacitación y Procesos" placeholder="Título de la reunión o proceso..." />
+        </div>
+
+        <div class="capture-hero">
+          
+          <!-- Audio Recording Card -->
+          <div class="glass-card audio-recorder-box">
+            <div class="card-header" style="width: 100%;">
+              <div class="card-title">🎙️ Audio en Tiempo Real</div>
+              <span id="audioEngineBadge" class="badge-tag" style="color: #38bdf8;">Voz en Vivo</span>
+            </div>
+
+            <!-- Big Interactive Trigger Button -->
+            <button id="btnBigRecord" class="record-btn-trigger" aria-label="Grabar" onclick="window.app.toggleRecord()">
+              <span id="recordBtnIcon">🎙️</span>
+            </button>
+
+            <div id="recordStatusLabel" class="record-status-label">Toca el botón para Grabar</div>
+            <div id="recordTimeLarge" class="record-time-display">00:00:00</div>
+
+            <!-- Waveform Animation -->
+            <div id="waveformBars" class="waveform-container">
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+            </div>
+
+            <!-- Live Speech Text Subtitle Box -->
+            <div id="liveCaptionBox" class="live-caption-box">
+              "Toca el micrófono para comenzar la transcripción continua..."
+            </div>
+
+            <!-- Audio Action Bar -->
+            <div class="audio-controls-row">
+              <button id="btnPauseAudio" class="btn-pill secondary" style="display:none;" onclick="window.app.pauseRecording()">⏸️ Pausar</button>
+              <button id="btnProcessNow" class="btn-pill primary" onclick="window.app.processNow()">⚡ Armar Flujo Ahora</button>
+            </div>
+          </div>
+
+          <!-- Camera & OCR Screen Capture Card -->
+          <div class="glass-card">
+            <div class="card-header">
+              <div class="card-title">📸 Fotos de Pantalla / Teams</div>
+              <span id="photoCountBadge" class="badge-tag">0 fotos</span>
+            </div>
+            
+            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+              Toma fotos a tu pantalla de Teams, sistemas o diapositivas con la cámara de tu celular. La IA extraerá los textos y pasos.
+            </p>
+
+            <div class="camera-action-grid">
+              <button id="btnCameraSnap" class="camera-action-btn" onclick="document.getElementById('inputNativeCamera').click()">
+                <span class="btn-icon-large">📸</span>
+                <span class="btn-label">Tomar Foto</span>
+                <span class="btn-desc">Cámara de iPhone</span>
+              </button>
+
+              <button id="btnGalleryPick" class="camera-action-btn" onclick="document.getElementById('inputNativeGallery').click()">
+                <span class="btn-icon-large">🖼️</span>
+                <span class="btn-label">Subir de Galería</span>
+                <span class="btn-desc">Fotos o capturas</span>
+              </button>
+            </div>
+
+            <!-- Thumbnail Carousel -->
+            <div style="margin-top: 14px;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); margin-bottom: 4px;">FOTOS CAPTURADAS:</div>
+              <div id="photoGalleryStrip" class="photos-strip">
+                <div style="font-size: 11px; color: var(--text-dim); padding: 10px; font-style: italic;">
+                  No hay fotos aún. Toca "Tomar Foto" para fotografiar Teams.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Quick Summary & Instructions -->
+        <div class="glass-card" style="margin-top: 14px;">
+          <div class="card-header">
+            <div class="card-title">💡 ¿Cómo funciona SessionFlow?</div>
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <div>
+              <strong style="color:#fff;">1. Graba la sesión:</strong> Sin límites de tiempo. Si hay pausas, te preguntará si sigue la reunión.
+            </div>
+            <div>
+              <strong style="color:#fff;">2. Fotografía las pantallas:</strong> Captura Teams, Excel o menús para que la IA extraiga el texto exacto.
+            </div>
+            <div>
+              <strong style="color:#fff;">3. Genera Flujos & Prompt:</strong> Obtén el proceso explicado paso a paso y cópialo directo para Claude.
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 2: TRANSCRIPCIÓN COMPLETA ================= -->
+      <section id="panel-timeline" class="tab-panel">
+        <div class="glass-card" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div class="card-title">📝 Registro Cronológico</div>
+            <div class="card-subtitle">Voz grabada y fotos sincronizadas en tiempo real</div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button id="btnDownloadTxt" class="btn-pill secondary" onclick="window.app.downloadTranscriptTxt()">⬇️ Guardar .txt</button>
+            <button id="btnClearTimeline" class="btn-pill secondary" onclick="window.app.clearTimeline()">🗑️ Limpiar</button>
+          </div>
+        </div>
+
+        <!-- Add Manual Note Box -->
+        <div class="glass-card" style="margin-bottom: 12px; padding: 10px 14px;">
+          <form id="formAddManualNote" onsubmit="window.app.handleManualNote(event)" style="display: flex; gap: 8px;">
+            <input id="inputManualNote" type="text" class="text-field" style="font-size: 12px; padding: 6px 10px;" placeholder="Agregar apunte rápido o nota manual..." />
+            <button type="submit" class="btn-pill primary" style="flex-shrink:0;">+ Agregar</button>
+          </form>
+        </div>
+
+        <div id="timelineContainer" class="timeline-stream">
+          <div id="timelineEmptyNotice" style="text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px;">
+            No hay transcripciones todavía.<br/>Inicia la grabación en la pestaña "Grabar" para ver la transcripción aquí.
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 3: FLUJOS & DIAGRAMAS ================= -->
+      <section id="panel-workflow" class="tab-panel">
+        <div class="glass-card" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div class="card-title">📊 Flujo del Proceso de Negocio</div>
+            <div class="card-subtitle">Estructurado por Inteligencia Artificial</div>
+          </div>
+          <button id="btnRegenerateWorkflow" class="btn-pill primary" onclick="window.app.generateWorkflowAnalysis()">🔄 Actualizar Flujo</button>
+        </div>
+
+        <div id="workflowResultContainer" class="workflow-section">
+          <!-- Initial Welcome State -->
+          <div class="summary-banner">
+            <h3 style="font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 6px;">🎯 Resumen del Proceso</h3>
+            <p id="workflowSummaryText" style="font-size: 12px; color: #e0e7ff; line-height: 1.5;">
+              Graba tu reunión y toma fotos a tus pantallas. Luego presiona <strong>"Actualizar Flujo"</strong> para que la IA extraiga todos los pasos detallados, responsables, herramientas y glosario de términos.
+            </p>
+          </div>
+
+          <div id="workflowStepsList" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Dynamic steps injected here -->
+          </div>
+
+          <div id="workflowGlossaryCard" class="glass-card" style="display:none;">
+            <div class="card-title" style="margin-bottom: 8px;">📚 Glosario de Términos & Siglas</div>
+            <div id="glossaryList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; font-size: 12px;"></div>
+          </div>
+
+          <div id="workflowTipsCard" class="glass-card" style="display:none;">
+            <div class="card-title" style="margin-bottom: 8px;">⚠️ Puntos Críticos & Errores a Evitar</div>
+            <div id="tipsList" style="font-size: 12px; color: #cbd5e1; line-height: 1.5;"></div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 4: COPILOTO IA ================= -->
+      <section id="panel-copilot" class="tab-panel">
+        <div class="chat-container">
+          
+          <div class="glass-card" style="padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+            <div>
+              <div class="card-title">🤖 Copiloto Inteligente</div>
+              <div class="card-subtitle">Pregúntale cualquier duda sobre tu reunión o las fotos</div>
+            </div>
+            <button id="btnClearChat" class="btn-pill secondary" style="font-size: 11px;" onclick="window.app.clearChat()">Limpiar Chat</button>
+          </div>
+
+          <!-- Quick Suggestion Pills -->
+          <div style="display: flex; gap: 6px; overflow-x: auto; padding: 4px 0; flex-shrink: 0;">
+            <button class="btn-pill secondary prompt-suggestion" onclick="window.app.askSuggested('¿Cuáles son los pasos clave que se explicaron?')">📋 Pasos Clave</button>
+            <button class="btn-pill secondary prompt-suggestion" onclick="window.app.askSuggested('Explícame qué significa lo que se vio en las fotos de Teams')">🖼️ Explicar Fotos</button>
+            <button class="btn-pill secondary prompt-suggestion" onclick="window.app.askSuggested('¿Qué dudas o pendientes quedaron en la reunión?')">❓ Dudas & Tareas</button>
+          </div>
+
+          <!-- Messages Container -->
+          <div id="chatMessages" class="chat-messages">
+            <div class="chat-bubble ai">
+              ¡Hola! Soy tu Copiloto. Tengo acceso a todo lo que se ha hablado en la sesión y a las fotos de Teams y pantallas que tomaste. ¿Qué te gustaría que te explique o aclare?
+            </div>
+          </div>
+
+          <!-- Chat Input Bar -->
+          <form id="chatForm" class="chat-input-bar" onsubmit="window.app.handleChatSubmit(event)">
+            <input id="chatInputText" type="text" class="chat-input" placeholder="Pregunta sobre la sesión o las pantallas..." autocomplete="off" />
+            <button type="submit" class="btn-pill primary" style="border-radius: 12px; padding: 6px 14px;">Enviar</button>
+          </form>
+
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 5: EXPORTAR A CLAUDE ================= -->
+      <section id="panel-claude" class="tab-panel">
+        <div class="claude-box">
+          <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div class="card-title">🚀 Super Prompt para Claude</div>
+              <div class="card-subtitle">Formato optimizado para Claude 3.5 Sonnet / Opus</div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button id="btnCopyClaudePrompt" class="btn-pill primary" onclick="window.app.copyClaudePrompt()">📋 Copiar Prompt</button>
+              <button id="btnDownloadClaudeMd" class="btn-pill secondary" onclick="window.app.downloadClaudeMd()">⬇️ .md</button>
+            </div>
+          </div>
+
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+            Este texto contiene toda la sesión organizada, transcripciones, texto de capturas de Teams y el contexto necesario para que Claude te explique como un tutor experto.
+          </p>
+
+          <textarea id="claudePromptTextarea" class="prompt-textarea" readonly></textarea>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation Dock (Cupertino Style) -->
+    <nav class="mobile-nav-dock">
+      <button data-tab="capture" class="nav-dock-item active" onclick="window.app.switchTab('capture')">
+        <span class="nav-dock-icon">🎙️</span>
+        <span class="nav-dock-label">Grabar</span>
+      </button>
+
+      <button data-tab="timeline" class="nav-dock-item" onclick="window.app.switchTab('timeline')">
+        <span class="nav-dock-icon">📝</span>
+        <span class="nav-dock-label">Transcripción</span>
+      </button>
+
+      <button data-tab="workflow" class="nav-dock-item" onclick="window.app.switchTab('workflow')">
+        <span class="nav-dock-icon">📊</span>
+        <span class="nav-dock-label">Flujos</span>
+      </button>
+
+      <button data-tab="copilot" class="nav-dock-item" onclick="window.app.switchTab('copilot')">
+        <span class="nav-dock-icon">🤖</span>
+        <span class="nav-dock-label">Copiloto</span>
+      </button>
+
+      <button data-tab="claude" class="nav-dock-item" onclick="window.app.switchTab('claude')">
+        <span class="nav-dock-icon">🚀</span>
+        <span class="nav-dock-label">Claude</span>
+      </button>
+    </nav>
+
+  </div>
+
+
+  <!-- ================= MODALS & SHEETS ================= -->
+
+  <!-- 1. SETTINGS MODAL -->
+  <div id="modalSettings" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Configuración & API Keys</div>
+        <button id="btnCloseSettings" class="btn-icon" style="width: 28px; height: 28px;" onclick="window.app.closeSettingsModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: #fff; display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Google Gemini API Key:</span>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-indigo); text-decoration: none; font-size: 11px;">Obtener gratis ↗</a>
+          </label>
+          <input id="inputGeminiKey" type="password" class="text-field" placeholder="AIzaSy..." />
+          <p style="font-size: 10px; color: var(--text-dim); margin-top: 4px;">
+            Tu clave se guarda únicamente en tu dispositivo (localStorage). Se usa para OCR de fotos y transcripción avanzada.
+          </p>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+          <button id="btnTestApiKey" class="btn-pill secondary" onclick="window.app.testApiKey()">🧪 Probar Conexión</button>
+          <span id="apiKeyStatusLabel" style="font-size: 11px; color: var(--text-dim);"></span>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px; margin-top: 6px;">
+          <label style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 4px; display: block;">Idioma de Voz:</label>
+          <select id="selectSpeechLang" class="text-field">
+            <option value="es-ES">Español (España)</option>
+            <option value="es-MX" selected>Español (México / Latinoamérica)</option>
+            <option value="en-US">English (US)</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+          <button id="btnSaveSettings" class="btn-pill primary" style="width: 100%;" onclick="window.app.saveSettings()">Guardar Ajustes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 2. SILENCE DETECTED ALERT SHEET -->
+  <div id="modalSilenceAlert" class="modal-overlay">
+    <div class="modal-sheet" style="max-width: 380px; text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 8px;">⏳</div>
+      <h3 style="font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px;">¿Sigue la sesión?</h3>
+      <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">
+        Detectamos una pausa de silencio en el audio. ¿Quieres continuar escuchando o ya terminó la reunión para armar el flujo completo?
+      </p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button id="btnSilenceResume" class="btn-pill success" style="justify-content: center; padding: 12px 8px;" onclick="window.app.resumeSilence()">
+          ▶️ Continuar
+        </button>
+        <button id="btnSilenceFinish" class="btn-pill primary" style="justify-content: center; padding: 12px 8px;" onclick="window.app.finishSilence()">
+          🏁 Ya Terminó
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 3. PHOTO & OCR DETAIL MODAL -->
+  <div id="modalPhotoDetail" class="modal-overlay">
+    <div class="modal-sheet" style="max-width: 500px;">
+      <div class="modal-header">
+        <div id="photoDetailTitle" class="modal-title">Detalle de Fotografía & OCR</div>
+        <button id="btnClosePhotoDetail" class="btn-icon" style="width: 28px; height: 28px;" onclick="window.app.closePhotoDetail()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: #000; border-radius: 14px; overflow: hidden; max-height: 220px; display: flex; align-items: center; justify-content: center;">
+          <img id="photoDetailImg" src="" alt="Captura" style="max-height: 220px; width: auto; object-fit: contain;" />
+        </div>
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--accent-indigo); margin-bottom: 4px;">Interpretación de la Pantalla:</div>
+          <div id="photoDetailInterpretation" style="font-size: 12px; color: #e0e7ff; background: rgba(99, 102, 241, 0.1); padding: 10px; border-radius: 10px; border: 1px solid rgba(99, 102, 241, 0.25); line-height: 1.45;"></div>
+        </div>
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 4px;">Texto Extraído (OCR):</div>
+          <textarea id="photoDetailOcrText" class="prompt-textarea" style="min-height: 100px; font-size: 11px;"></textarea>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <button id="btnDeleteCurrentPhoto" class="btn-pill secondary" style="color: var(--accent-rose);" onclick="window.app.deleteCurrentPhoto()">🗑️ Eliminar Foto</button>
+          <button id="btnCopyPhotoText" class="btn-pill secondary" onclick="window.app.copyCurrentPhotoText()">📋 Copiar Texto</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 4. SESSION HISTORY MODAL -->
+  <div id="modalHistory" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">📜 Historial de Sesiones</div>
+        <button id="btnCloseHistory" class="btn-icon" style="width: 28px; height: 28px;" onclick="window.app.closeHistoryModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="historyListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="text-align: center; color: var(--text-dim); padding: 20px; font-size: 12px;">Cargando historial...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Hidden Native File Inputs for 1-Tap iOS Safari Interaction -->
+  <input type="file" id="inputNativeCamera" accept="image/*" capture="environment" class="hidden" onchange="window.app.handleNativeCameraChange(event)" />
+  <input type="file" id="inputNativeGallery" accept="image/*" multiple class="hidden" onchange="window.app.handleNativeGalleryChange(event)" />
+
+  <!-- Toast Shelf -->
+  <div id="toastShelf" class="toast-shelf"></div>
+
+  <!-- Master Zero-Dependency JavaScript Application with Cache Buster -->
+  <script src="./js/app.js?v=2.5"></script>
+</body>
+</html>
